@@ -177,6 +177,8 @@ const PointsCalendar: React.FC<PointsCalendarProps> = ({ pointsData,setBackDate 
 
                                     <br />
                                     {format(date, 'd')} {format(date, 'MMM')}
+                                    <br />
+                                    {format(date, 'EEE')}
                                 </Typography>
                             </Box>
                         </Box>
