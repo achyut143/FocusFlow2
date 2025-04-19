@@ -49,7 +49,7 @@ router.post('/remindersToTasks', async (req, res) => {
         // Insert reminders into tasks table
         const insertPromises = reminders.map(async (reminder) => {
             await db.run(`
-                INSERT INTO tasks (
+                INSERT INTO task (
                     title,
                     description,
                     date,
