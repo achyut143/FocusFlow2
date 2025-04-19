@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Paper, Typography, Box, Tooltip, Tab, Tabs } from '@mui/material';
 import { format, subDays, isSameDay, parseISO, startOfDay } from 'date-fns';
-import { TasksTableDated } from './Common/TasksTableDated';
 import { TasksTable } from './Common/TasksTable';
 
 

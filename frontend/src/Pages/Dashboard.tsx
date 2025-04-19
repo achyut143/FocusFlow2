@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Paper, Typography, Box, Tooltip, Tab, Tabs } from '@mui/material';
 import { format, subDays, isSameDay, parseISO, startOfDay } from 'date-fns';
+import { portUrl } from '../AppConfiguration';
 
 interface HabitDay {
   taskName: string;
@@ -205,7 +206,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchHabitData = async () => {
       try {
-        const response = await fetch('http://localhost:5000/tasks/graph');
+        const response = await fetch(`${portUrl}/tasks/graph`);
         const data = await response.json();
         setHabitData(data);
       } catch (error) {

@@ -1,5 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import { openDb } from '../index';
+import { InternationaltimeZone } from '../AppConfiguration';
 
 const router = Router();
 
@@ -13,7 +14,8 @@ const convertTo12Hour = (time24: string, addMinutes: number = 0) => {
     return date.toLocaleString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
-        hour12: true
+        hour12: true,
+        timeZone: InternationaltimeZone,
     });
 }
 router.post('/remindersToTasks', async (req, res) => {
@@ -24,7 +26,7 @@ router.post('/remindersToTasks', async (req, res) => {
 
         // Get today's date in EST
         let estDate = new Date().toLocaleDateString('en-US', {
-            timeZone: 'America/New_York',
+            timeZone: InternationaltimeZone,
             year: 'numeric',
             month: '2-digit',
             day: '2-digit'
@@ -204,7 +206,7 @@ async function createTimeBlockedTasks(db: any, tasks: any[], rest: number, slot:
             hour: '2-digit',
             minute: '2-digit',
             hour12: true,
-            timeZone: 'America/New_York'  // EST/EDT timezone
+            timeZone: InternationaltimeZone  // EST/EDT timezone
         };
         return date.toLocaleTimeString('en-US', options);
     }

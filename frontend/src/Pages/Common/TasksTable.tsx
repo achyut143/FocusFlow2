@@ -30,6 +30,7 @@ import Replay5Icon from '@mui/icons-material/Replay5';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { format } from "date-fns";
 import Timer from "./Timer";
+import { InternationaltimeZone, portUrl } from "../../AppConfiguration";
 
 // Interfaces
 interface Task {
@@ -375,7 +376,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
     try {
       setRefreshing(true);
       const response = await axios.post<Task[]>(
-        "http://localhost:5000/tasks/gettasks", {
+        `${portUrl}/tasks/gettasks`, {
           date: date ? date : null
       }
       );
@@ -421,14 +422,14 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
   // Function to handle task completion toggle
   const handleTaskCompletion = async (Task: Task, completed: boolean, routine: boolean) => {
     try {
-      await axios.put(`http://localhost:5000/tasks/tasks/${Task.id}`, {
+      await axios.put(`${portUrl}/tasks/tasks/${Task.id}`, {
         completed: !completed,
       });
 
       if (routine) {
         console.log("completed routine")
 
-        await axios.post('http://localhost:5000/habits/habits', { taskName: Task.title, done: !completed, procrastinated: 0, weight: Task.weight, date: date ? date : format(new Date(), 'yyyy-MM-dd') })
+        await axios.post(`${portUrl}/habits/habits`, { taskName: Task.title, done: !completed, procrastinated: 0, weight: Task.weight, date: date ? date : format(new Date(), 'yyyy-MM-dd') })
 
       }
 
@@ -448,14 +449,14 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
 
   const handleTaskNonCompletion = async (Task: Task, not_completed: boolean, routine: boolean) => {
     try {
-      await axios.put(`http://localhost:5000/tasks/tasksNotCompleted/${Task.id}`, {
+      await axios.put(`${portUrl}/tasks/tasksNotCompleted/${Task.id}`, {
         not_completed: !not_completed,
       });
 
       if (routine) {
         console.log("not completed routine")
 
-        await axios.post('http://localhost:5000/habits/habits', { taskName: Task.title, done: 0, procrastinated: !not_completed, weight: Task.weight,  date: date ? date : format(new Date(), 'yyyy-MM-dd')  })
+        await axios.post(`${portUrl}/habits/habits`, { taskName: Task.title, done: 0, procrastinated: !not_completed, weight: Task.weight,  date: date ? date : format(new Date(), 'yyyy-MM-dd')  })
 
       }
 
@@ -475,14 +476,14 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
 
   const handle5minCompletion = async (Task: Task, five: boolean, routine: boolean) => {
     try {
-      await axios.put(`http://localhost:5000/tasks/fiveCompleted/${Task.id}`, {
+      await axios.put(`${portUrl}/tasks/fiveCompleted/${Task.id}`, {
         five: !five,
       });
 
       if (routine) {
         console.log("not completed routine")
 
-        await axios.post('http://localhost:5000/habits/habits', { taskName: Task.title, done: 1, procrastinated: 0,  date: date ? date : format(new Date(), 'yyyy-MM-dd') })
+        await axios.post(`${portUrl}/habits/habits`, { taskName: Task.title, done: 1, procrastinated: 0,  date: date ? date : format(new Date(), 'yyyy-MM-dd') })
 
       }
 
@@ -502,7 +503,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
 
   const handleTaskReassign = async (Task: Task, reassign: boolean) => {
     try {
-      await axios.put(`http://localhost:5000/tasks/reassign/${Task.id}`, {
+      await axios.put(`${portUrl}/tasks/reassign/${Task.id}`, {
         reassign: !reassign,
       });
 
@@ -552,7 +553,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
   // In your TasksTable component, add this function
   const handleDeleteTask = async (taskId: number) => {
     try {
-      await axios.delete(`http://localhost:5000/tasks/tasks/${taskId}`);
+      await axios.delete(`${portUrl}/tasks/tasks/${taskId}`);
       // Update local state by filtering out the deleted task
       setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
     } catch (err) {
@@ -563,7 +564,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
   // In your TasksTable component, add this function
   const handleDeleteForeverTask = async (taskId: number) => {
     try {
-      await axios.delete(`http://localhost:5000/tasks/deleteForever/${taskId}`);
+      await axios.delete(`${portUrl}/tasks/deleteForever/${taskId}`);
       // Update local state by filtering out the deleted task
       setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
     } catch (err) {
@@ -599,7 +600,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
       const weight = tasksResponse[4]?.trim();
       const date = new Date().toISOString().split("T")[0];
 
-      await axios.put(`http://localhost:5000/tasks/tasksUpdate/${taskId}`, {
+      await axios.put(`${portUrl}/tasks/tasksUpdate/${taskId}`, {
         start_time: startTime,
         end_time: endTime,
         description: description,
@@ -852,7 +853,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
                             hour: 'numeric',
                             minute: '2-digit',
                             hour12: true,
-                            timeZone: 'America/New_York'
+                            timeZone: InternationaltimeZone
                           });
 
                           // Convert times to comparable format (minutes since midnight)

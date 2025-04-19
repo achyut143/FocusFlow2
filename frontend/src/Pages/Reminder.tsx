@@ -2,6 +2,7 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import axios from 'axios';
 import './Common/reminder.css';
+import { portUrl } from '../AppConfiguration';
 
 // Interface representing a reminder object
 interface Reminder {
@@ -26,7 +27,7 @@ interface NewReminder {
 type DateFilter = 'all' | 'week' | 'month';
 
 // Base URL for the API
-const API_BASE_URL = 'http://localhost:5000/reminders'; // Adjust port as needed
+const API_BASE_URL = `${portUrl}/reminders`; // Adjust port as needed
 
 const Reminder: React.FC = () => {
     // State variables

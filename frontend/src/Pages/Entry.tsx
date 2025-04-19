@@ -6,6 +6,7 @@ import Grid from "@mui/material/Grid";
 import { TasksTable } from "./Common/TasksTable";
 import { Points } from "./Common/Points";
 import Reminder from "./Reminder";
+import { InternationaltimeZone, portUrl } from "../AppConfiguration";
 
 // Styled component for consistent item styling
 const Item = styled(Paper)(({ theme }) => ({
@@ -30,7 +31,7 @@ const Entry: React.FC = () => {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
-      timeZone: "America/New_York",
+      timeZone: InternationaltimeZone,
     });
   });
 
@@ -43,7 +44,7 @@ const Entry: React.FC = () => {
   const AutoCreate = async () => {
     try {
       setRefresh(false);
-      await axios.post("http://localhost:5000/tasks/createTimeForRemainingHabits", {
+      await axios.post(`${portUrl}/tasks/createTimeForRemainingHabits`, {
         slot: slotValue,
         rest: restValue,
         time: timeValue,
@@ -60,7 +61,7 @@ const Entry: React.FC = () => {
   const LoadReminders = async () => {
     try {
       setRefresh(false);
-      await axios.post("http://localhost:5000/tasks/remindersToTasks");
+      await axios.post(`${portUrl}/tasks/remindersToTasks`);
       setRefresh(true);
       setValue("");
     } catch (error) {
@@ -84,7 +85,7 @@ const Entry: React.FC = () => {
         const endTime = tasksResponse[1] ? `T:${tasksResponse[1]?.trim()}` : "T:25";
 
         try {
-          await axios.post("http://localhost:5000/tasks/tasks", {
+          await axios.post(`${portUrl}/tasks/tasks`, {
             title: taskName,
             description: description,
             start_time: startTime,
@@ -102,6 +103,7 @@ const Entry: React.FC = () => {
 
       if (tasksResponse.length >= 4) {
         try {
+          setRefresh(false);
 
           const startTime = `${tasksResponse[0].trim()} ${period}`;
           const endTime = `${tasksResponse[1].trim()} ${period}`;
@@ -109,7 +111,7 @@ const Entry: React.FC = () => {
           const description = tasksResponse[3].trim();
           const weight = tasksResponse[4]?.trim();
 
-          await axios.post("http://localhost:5000/tasks/tasks", {
+          await axios.post(`${portUrl}/tasks/tasks`, {
             title: taskName,
             description: description,
             start_time: startTime,
