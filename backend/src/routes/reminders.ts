@@ -72,7 +72,8 @@ router.put('/reminders/:id', async (req: Request, res: Response) => {
                 date = ?, 
                 time = ?, 
                 repeat = ?, 
-                completed = ?
+                completed = ?,
+                moved = 0
             WHERE id = ?`,
             [task, date, time || null, repeat, completed, req.params.id]
         );

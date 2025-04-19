@@ -279,6 +279,8 @@ export const TasksTable: React.FC<TasksTableProps> = ({ }) => {
     requestNotificationPermission();
   }, []);
 
+ 
+
   // Check for upcoming tasks and trigger notifications
   useEffect(() => {
     const checkUpcomingTasks = () => {

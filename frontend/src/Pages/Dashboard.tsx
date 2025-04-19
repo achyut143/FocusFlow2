@@ -13,9 +13,10 @@ interface HabitDay {
 
 interface HabitCalendarProps {
   habitData: HabitDay[];
+  noOfDays:number;
 }
 
-const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData }) => {
+const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData,noOfDays }) => {
   const [selectedHabit, setSelectedHabit] = useState<string>('');
   
   const habitNames = Array.from(new Set(habitData.map(habit => habit.taskName)));
@@ -26,9 +27,9 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData }) => {
     }
   }, [habitNames]);
 
-  const last30Days = Array.from({ length: 30 }, (_, i) => {
+  const last30Days = Array.from({ length: noOfDays }, (_, i) => {
     // Use startOfDay to normalize the time to midnight
-    return startOfDay(subDays(new Date(), 30 - i - 1));
+    return startOfDay(subDays(new Date(), noOfDays - i - 1));
   });
 
   const getStatusForDay = (date: Date) => {
@@ -199,6 +200,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData }) => {
 const Dashboard: React.FC = () => {
   const [habitData, setHabitData] = useState<HabitDay[]>([]);
   const [loading, setLoading] = useState(true);
+  const [noOfDays,setNoOfDays] = useState(30)
 
   useEffect(() => {
     const fetchHabitData = async () => {
@@ -222,7 +224,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <HabitCalendar habitData={habitData} />
+      <HabitCalendar habitData={habitData} noOfDays={noOfDays}/>
     </Box>
   );
 };

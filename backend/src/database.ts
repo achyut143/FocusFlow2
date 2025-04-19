@@ -37,9 +37,9 @@ const initDatabase = async () => {
     await db.run(sql, [name, target])
 };
 
-await db.exec(`
-  ALTER TABLE task ADD COLUMN reassign BOOLEAN NOT NULL DEFAULT FALSE;
-`);
+// await db.exec(`
+//   ALTER TABLE task ADD COLUMN reassign BOOLEAN NOT NULL DEFAULT FALSE;
+// `);
 
 // await db.exec(`
 //   ALTER TABLE habit ADD COLUMN weight REAL NOT NULL DEFAULT 0;
@@ -84,6 +84,8 @@ await db.exec(`
 // `;
 
 // await db.exec(DATABASE_CREATE_REMINDERS)
+await db.exec(`ALTER TABLE reminders 
+ADD COLUMN alloted INTEGER DEFAULT 30;`);
 
 
 console.log('done')

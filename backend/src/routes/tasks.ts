@@ -4,6 +4,91 @@ import { openDb } from '../index';
 const router = Router();
 
 // Create a new task
+
+const convertTo12Hour = (time24: string, addMinutes: number = 0) => {
+    const [hours, minutes] = time24.split(':').map(Number);
+    const date = new Date(`2000/01/01 ${hours}:${minutes}`);
+    date.setMinutes(date.getMinutes() + addMinutes);
+
+    return date.toLocaleString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+router.post('/remindersToTasks', async (req, res) => {
+    const request = req.body;
+    const db = await openDb();
+    try {
+
+
+        // Get today's date in EST
+        let estDate = new Date().toLocaleDateString('en-US', {
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+
+        const [month, day, year] = estDate.split('/');
+        estDate = `${year}-${month}-${day}`;
+
+        // Get reminders for today
+        const reminders = await db.all(`
+            SELECT * FROM reminders 
+            WHERE date = ? 
+            AND moved = 0
+        `, [estDate]);
+
+        // if (reminders.length === 0) {
+        //     return 
+        // }
+
+        // Insert reminders into tasks table
+        const insertPromises = reminders.map(async (reminder) => {
+            await db.run(`
+                INSERT INTO tasks (
+                    title,
+                    description,
+                    date,
+                    start_time,
+                    end_time,
+                    category_id,
+                    weight
+
+                ) VALUES (?, ?, ?, ?, ?, 1, 1)
+            `, [
+                reminder.task,
+                'From reminder',
+                reminder.date,
+                reminder.time ? convertTo12Hour(reminder.time) : 'T:0',
+                reminder.time ? convertTo12Hour(reminder.time, reminder.alloted) : `T:${reminder.alloted}`,
+            ]);
+        });
+
+        await Promise.all(insertPromises);
+
+        // Update moved status in reminders
+        await db.run(`
+            UPDATE reminders 
+            SET moved = 1 
+            WHERE date = ? 
+            AND moved = 0
+        `, [estDate]);
+
+        res.status(201).json({
+            success: true,
+            message: `${reminders.length} reminders moved to tasks`
+        });
+
+    } catch (error) {
+        console.error('Error in remindersToTasks:', error);
+        await db?.close();
+        res.status(500).json({ message: 'Error creating task' });
+
+    }
+});
+
 router.post('/tasks', async (req, res) => {
     const { title, description, start_time, end_time, completed, category_id, weight } = req.body;
     const db = await openDb();
@@ -50,9 +135,9 @@ router.post('/createTimeForRemainingHabits', async (req: Request, res: Response)
     console.log('0')
     const db = await openDb();
 
-    const { slot, rest ,time} = req.body;
+    const { slot, rest, time } = req.body;
 
-    console.log('time',time)
+    console.log('time', time)
 
 
     let tasks = await db.all(`
@@ -63,15 +148,15 @@ router.post('/createTimeForRemainingHabits', async (req: Request, res: Response)
 
 
 
-   
+
 
     tasks = [...tasks]
 
-    await createTimeBlockedTasks(db, tasks, rest, slot,time);
+    await createTimeBlockedTasks(db, tasks, rest, slot, time);
 
     await db.run(`
         UPDATE task SET  reassign = false`,
-       
+
     );
 
     await db.close();
@@ -107,9 +192,9 @@ const getTimeRemaining = (startTime: string, endTime: string): number => {
 
 };
 
-async function createTimeBlockedTasks(db: any, tasks: any[], rest: number, slot: number,time:string) {
+async function createTimeBlockedTasks(db: any, tasks: any[], rest: number, slot: number, time: string) {
     // Convert current time string to Date object and set to EST timezone
- 
+
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59); // Set end of day time
 

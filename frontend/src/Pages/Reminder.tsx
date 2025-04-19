@@ -3,48 +3,52 @@ import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import axios from 'axios';
 import './Common/reminder.css';
 
+// Interface representing a reminder object
 interface Reminder {
     id: number;
     task: string;
     date: string;
     time?: string;
-    repeat: 'none' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
-    completed: boolean;
+    moved: boolean; // Indicates if the task has been moved
+    repeat: 'none' | '3 days' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly'; // Frequency of the reminder
+    completed: boolean; // Indicates if the reminder is completed
 }
 
+// Interface for creating a new reminder
 interface NewReminder {
     task: string;
     date: string;
     time?: string;
-    repeat: 'none' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+    repeat: 'none' | '3 days' |  'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
 }
 
+// Type for filtering reminders by date
 type DateFilter = 'all' | 'week' | 'month';
 
+// Base URL for the API
 const API_BASE_URL = 'http://localhost:5000/reminders'; // Adjust port as needed
 
 const Reminder: React.FC = () => {
+    // State variables
     const [reminders, setReminders] = useState<Reminder[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<number | null>(null);
-
     const [newReminder, setNewReminder] = useState<NewReminder>({
         task: '',
         date: '',
         time: '',
         repeat: 'none'
     });
-
     const [editingReminder, setEditingReminder] = useState<NewReminder>({
         task: '',
         date: '',
         time: '',
         repeat: 'none'
     });
-
     const [dateFilter, setDateFilter] = useState<DateFilter>('all');
 
+    // Function to get date range based on the selected filter
     const getDateRange = (filter: DateFilter): { startDate: string, endDate: string } => {
         const today = new Date();
         const startDate = new Date(today);
@@ -68,19 +72,18 @@ const Reminder: React.FC = () => {
         };
     };
 
-    // Modified fetch reminders to include date range
+    // Function to fetch reminders from the API
     const fetchReminders = async () => {
         try {
             setLoading(true);
             let response;
 
+            // Fetch reminders based on the selected date filter
             if (dateFilter === 'all') {
                 response = await axios.get(`${API_BASE_URL}/reminders`);
             } else {
                 const { startDate, endDate } = getDateRange(dateFilter);
-                response = await axios.get(
-                    `${API_BASE_URL}/reminders/range/${startDate}/${endDate}`
-                );
+                response = await axios.get(`${API_BASE_URL}/reminders/range/${startDate}/${endDate}`);
             }
 
             setReminders(response.data);
@@ -93,15 +96,17 @@ const Reminder: React.FC = () => {
         }
     };
 
-    // Update useEffect to depend on dateFilter
+    // Fetch reminders when the date filter changes
     useEffect(() => {
         fetchReminders();
     }, [dateFilter]);
 
+    // Handle changes in the date filter selection
     const handleFilterChange = (e: ChangeEvent<HTMLSelectElement>) => {
         setDateFilter(e.target.value as DateFilter);
     };
 
+    // Handle input changes for new reminders
     const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setNewReminder(prev => ({
@@ -110,11 +115,13 @@ const Reminder: React.FC = () => {
         }));
     };
 
+    // Handle form submission for adding/updating reminders
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!newReminder.task || !newReminder.date) return;
+        if (!newReminder.task || !newReminder.date) return; // Ensure task and date are provided
 
         try {
+            // Update existing reminder or create a new one
             if (editingId !== null) {
                 await axios.put(`${API_BASE_URL}/reminders/${editingId}`, {
                     ...newReminder,
@@ -127,6 +134,7 @@ const Reminder: React.FC = () => {
                 });
             }
 
+            // Reset new reminder input fields
             setNewReminder({
                 task: '',
                 date: '',
@@ -134,7 +142,7 @@ const Reminder: React.FC = () => {
                 repeat: 'none'
             });
             setEditingId(null);
-            fetchReminders();
+            fetchReminders(); // Refresh reminders list
             setError(null);
         } catch (err) {
             setError(editingId ? 'Failed to update reminder' : 'Failed to create reminder');
@@ -142,6 +150,7 @@ const Reminder: React.FC = () => {
         }
     };
 
+    // Handle editing of a reminder
     const handleEdit = (reminder: Reminder) => {
         setEditingId(reminder.id);
         setEditingReminder({
@@ -152,6 +161,7 @@ const Reminder: React.FC = () => {
         });
     };
 
+    // Cancel editing mode
     const handleCancelEdit = () => {
         setEditingId(null);
         setEditingReminder({
@@ -162,9 +172,8 @@ const Reminder: React.FC = () => {
         });
     };
 
-    const handleEditInputChange = (
-        e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    ) => {
+    // Handle input changes for editing reminders
+    const handleEditInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setEditingReminder(prev => ({
             ...prev,
@@ -172,6 +181,7 @@ const Reminder: React.FC = () => {
         }));
     };
 
+    // Handle updating a reminder
     const handleUpdateReminder = async (id: number) => {
         try {
             await axios.put(`${API_BASE_URL}/reminders/${id}`, {
@@ -179,7 +189,7 @@ const Reminder: React.FC = () => {
                 completed: reminders.find(r => r.id === id)?.completed || false
             });
             setEditingId(null);
-            fetchReminders();
+            fetchReminders(); // Refresh reminders list
             setError(null);
         } catch (err) {
             setError('Failed to update reminder');
@@ -187,11 +197,11 @@ const Reminder: React.FC = () => {
         }
     };
 
-
+    // Handle deletion of a reminder
     const handleDelete = async (id: number) => {
         try {
             await axios.delete(`${API_BASE_URL}/reminders/${id}`);
-            fetchReminders();
+            fetchReminders(); // Refresh reminders list
             setError(null);
         } catch (err) {
             setError('Failed to delete reminder');
@@ -199,15 +209,19 @@ const Reminder: React.FC = () => {
         }
     };
 
+    // Calculate the next occurrence date based on the current date and repeat type
     const calculateNextOccurrence = (currentDate: string, repeatType: string): string => {
         const date = new Date(currentDate);
 
         switch (repeatType) {
+            case '3 days':
+                date.setDate(date.getDate() + 3);
+                break;
             case 'weekly':
                 date.setDate(date.getDate() + 7);
                 break;
             case 'biweekly':
-                date.setMonth(date.getDate() + 14);
+                date.setDate(date.getDate() + 14);
                 break;
             case 'monthly':
                 date.setMonth(date.getMonth() + 1);
@@ -219,21 +233,18 @@ const Reminder: React.FC = () => {
                 date.setFullYear(date.getFullYear() + 1);
                 break;
             default:
-                return currentDate;
+                return currentDate; // No repetition
         }
 
-        return date.toISOString().split('T')[0];
+        return date.toISOString().split('T')[0]; // Return date in YYYY-MM-DD format
     };
 
-
-    // TimeManagementAPP/frontend/src/Pages/Reminder.tsx
-
+    // Determine the current status of the task based on its date
     const getTaskStatus = (dateStr: string): 'past' | 'today' | 'future' => {
-        // Create dates using local timezone
-        const taskDate = new Date(dateStr + 'T00:00:00'); // Add time to ensure local date interpretation
+        const taskDate = new Date(dateStr + 'T00:00:00'); // Ensure local date interpretation
         const today = new Date();
 
-        // Convert both to date strings to compare only dates
+        // Compare only the date parts
         const taskDateStr = taskDate.toISOString().split('T')[0];
         const todayStr = today.toISOString().split('T')[0];
 
@@ -246,19 +257,15 @@ const Reminder: React.FC = () => {
         }
     };
 
-
-    // Modified toggle complete to handle recurring reminders
+    // Toggle the completion status of a reminder
     const toggleComplete = async (reminder: Reminder) => {
         try {
-            // First, toggle the current reminder's completion status
+            // Toggle the current reminder's completion status
             await axios.patch(`${API_BASE_URL}/reminders/${reminder.id}/toggle`);
 
-            // If it's a recurring reminder and being marked as completed
+            // Handle recurring reminders
             if (reminder.repeat !== 'none' && !reminder.completed) {
-                // Calculate next occurrence date
                 const nextDate = calculateNextOccurrence(reminder.date, reminder.repeat);
-
-                // Create new reminder for next occurrence
                 const newRecurringReminder = {
                     task: reminder.task,
                     date: nextDate,
@@ -271,8 +278,7 @@ const Reminder: React.FC = () => {
                 await axios.post(`${API_BASE_URL}/reminders`, newRecurringReminder);
             }
 
-            // Refresh the reminders list
-            fetchReminders();
+            fetchReminders(); // Refresh reminders list
             setError(null);
         } catch (err) {
             setError('Failed to update reminder status');
@@ -280,15 +286,13 @@ const Reminder: React.FC = () => {
         }
     };
 
-
+    // Show loading state if reminders are being fetched
     if (loading && reminders.length === 0) {
         return <div className="loading">Loading reminders...</div>;
     }
 
-    const ReminderRow: React.FC<{
-        reminder: Reminder;
-        isEditing: boolean;
-    }> = ({ reminder, isEditing }) => {
+    // Component to render each reminder row
+    const ReminderRow: React.FC<{ reminder: Reminder; isEditing: boolean; }> = ({ reminder, isEditing }) => {
         const taskStatus = getTaskStatus(reminder.date);
         if (isEditing) {
             return (
@@ -301,6 +305,7 @@ const Reminder: React.FC = () => {
                             disabled
                         />
                     </td>
+                    <td>{reminder.moved ? 'moved' : ''}</td>
                     <td>
                         <input
                             type="text"
@@ -338,6 +343,7 @@ const Reminder: React.FC = () => {
                             className="edit-input"
                         >
                             <option value="none">No Repeat</option>
+                            <option value="3 days">3 days</option>
                             <option value="weekly">Weekly</option>
                             <option value="biweekly">Biweekly</option>
                             <option value="monthly">Monthly</option>
@@ -346,33 +352,18 @@ const Reminder: React.FC = () => {
                         </select>
                     </td>
                     <td>
-                        {editingReminder.repeat !== 'none' ?
-                            calculateNextOccurrence(editingReminder.date, editingReminder.repeat) :
-                            'N/A'}
+                        {editingReminder.repeat !== 'none' ? calculateNextOccurrence(editingReminder.date, editingReminder.repeat) : 'N/A'}
                     </td>
                     <td className="action-buttons">
-                        <button
-                            onClick={() => handleUpdateReminder(reminder.id)}
-                            className="save-btn"
-                        >
-                            Save
-                        </button>
-                        <button
-                            onClick={handleCancelEdit}
-                            className="cancel-btn"
-                        >
-                            Cancel
-                        </button>
+                        <button onClick={() => handleUpdateReminder(reminder.id)} className="save-btn">Save</button>
+                        <button onClick={handleCancelEdit} className="cancel-btn">Cancel</button>
                     </td>
                 </tr>
             );
         }
 
         return (
-            <tr className={`
-                ${reminder.completed ? 'completed' : ''} 
-                ${!reminder.completed ? `status-${taskStatus}` : ''}
-            `}>
+            <tr className={`${reminder.completed ? 'completed' : ''} ${!reminder.completed ? `status-${taskStatus}` : ''}`}>
                 <td>
                     <input
                         type="checkbox"
@@ -380,6 +371,7 @@ const Reminder: React.FC = () => {
                         onChange={() => toggleComplete(reminder)}
                     />
                 </td>
+                <td>{reminder.moved ? 'moved' : ''}</td>
                 <td>{reminder.task}</td>
                 <td>{reminder.date}</td>
                 <td>{reminder.time || 'No time set'}</td>
@@ -389,23 +381,11 @@ const Reminder: React.FC = () => {
                     </span>
                 </td>
                 <td>
-                    {reminder.repeat !== 'none' && !reminder.completed ?
-                        calculateNextOccurrence(reminder.date, reminder.repeat) :
-                        'N/A'}
+                    {reminder.repeat !== 'none' && !reminder.completed ? calculateNextOccurrence(reminder.date, reminder.repeat) : 'N/A'}
                 </td>
                 <td className="action-buttons">
-                    <button
-                        onClick={() => handleEdit(reminder)}
-                        className="edit-btn"
-                    >
-                        Edit
-                    </button>
-                    <button
-                        onClick={() => handleDelete(reminder.id)}
-                        className="delete-btn"
-                    >
-                        Delete
-                    </button>
+                    <button onClick={() => handleEdit(reminder)} className="edit-btn">Edit</button>
+                    <button onClick={() => handleDelete(reminder.id)} className="delete-btn">Delete</button>
                 </td>
             </tr>
         );
@@ -446,6 +426,7 @@ const Reminder: React.FC = () => {
                     onChange={handleInputChange}
                 >
                     <option value="none">No Repeat</option>
+                    <option value="3 days">3 days</option>
                     <option value="weekly">Weekly</option>
                     <option value="biweekly">Biweekly</option>
                     <option value="monthly">Monthly</option>
@@ -490,6 +471,7 @@ const Reminder: React.FC = () => {
                     <thead className="sticky-header">
                         <tr>
                             <th>Status</th>
+                            <th>Moved</th>
                             <th>Task</th>
                             <th>Date</th>
                             <th>Time</th>

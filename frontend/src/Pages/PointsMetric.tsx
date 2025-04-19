@@ -18,14 +18,17 @@ interface PointsDay {
 interface PointsCalendarProps {
     pointsData: PointsDay[];
     setBackDate :React.Dispatch<React.SetStateAction<string>>
+    noOfDays:number;
 }
 
-const PointsCalendar: React.FC<PointsCalendarProps> = ({ pointsData,setBackDate }) => {
+const PointsCalendar: React.FC<PointsCalendarProps> = ({ pointsData,setBackDate,noOfDays}) => {
+
+   
 
 
-    const last30Days = Array.from({ length: 30 }, (_, i) => {
+    const last30Days = Array.from({ length: noOfDays }, (_, i) => {
         // Use startOfDay to normalize the time to midnight
-        return startOfDay(subDays(new Date(), 30 - i - 1));
+        return startOfDay(subDays(new Date(), noOfDays - i - 1));
     });
 
 
@@ -77,7 +80,7 @@ const PointsCalendar: React.FC<PointsCalendarProps> = ({ pointsData,setBackDate 
 
 
 
-    const getTooltipText = (date: Date) => {
+    const getTooltipText = (date: Date,just?:boolean) => {
         const dayData = pointsData.find(points =>
             isSameDay(startOfDay(parseISO(points.date)), startOfDay(date))
         );
@@ -89,6 +92,7 @@ const PointsCalendar: React.FC<PointsCalendarProps> = ({ pointsData,setBackDate 
         const totalPointsForDay = (dayData.totalPoints + dayData.totalPointsHabits)
         
 
+        if(just) return `${((pointsEarned - pointsLost) * 100 / totalPointsForDay).toFixed(2)} %`
 
         return (
             <Typography variant="caption">
@@ -179,6 +183,8 @@ const PointsCalendar: React.FC<PointsCalendarProps> = ({ pointsData,setBackDate 
                                     {format(date, 'd')} {format(date, 'MMM')}
                                     <br />
                                     {format(date, 'EEE')}
+                                    <br/>
+                                    {getTooltipText(date,true)}
                                 </Typography>
                             </Box>
                         </Box>
@@ -344,6 +350,7 @@ const PointsMetric: React.FC = () => {
     const [PointsData, setPointsData] = useState<PointsDay[]>([]);
     const [loading, setLoading] = useState(true);
     const [backDate,setBackDate] = useState('')
+    const [noOfDays,setNoOfDays] = useState(30)
 
     useEffect(() => {
         const fetchPointsData = async () => {
@@ -370,8 +377,8 @@ const PointsMetric: React.FC = () => {
     return (
         <Box sx={{ p: 3 }}>
             {void console.log(backDate)}
-            <PointsCalendar pointsData={PointsData} setBackDate={setBackDate}/>
-            {backDate && <TasksTableDated date={backDate} key={backDate} setBackDate={setBackDate}></TasksTableDated>}
+            <PointsCalendar pointsData={PointsData} setBackDate={setBackDate} noOfDays={noOfDays}/>
+            {backDate && <TasksTableDated date={backDate} key={backDate} setBackDate={setBackDate} ></TasksTableDated>}
         </Box>
     );
 };
