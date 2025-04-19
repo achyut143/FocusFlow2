@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Paper, Typography, Box, Tooltip, Tab, Tabs } from '@mui/material';
 import { format, subDays, isSameDay, parseISO, startOfDay } from 'date-fns';
 import { TasksTableDated } from './Common/TasksTableDated';
+import { TasksTable } from './Common/TasksTable';
 
 
 interface PointsDay {
@@ -378,7 +379,7 @@ const PointsMetric: React.FC = () => {
         <Box sx={{ p: 3 }}>
             {void console.log(backDate)}
             <PointsCalendar pointsData={PointsData} setBackDate={setBackDate} noOfDays={noOfDays}/>
-            {backDate && <TasksTableDated date={backDate} key={backDate} setBackDate={setBackDate} ></TasksTableDated>}
+            {backDate && <TasksTable date={backDate} key={backDate} setBackDate={setBackDate} ></TasksTable>}
         </Box>
     );
 };

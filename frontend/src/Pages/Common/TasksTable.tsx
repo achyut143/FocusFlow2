@@ -241,11 +241,13 @@ const RegularRow = styled(TableRow)(({ theme }) => ({
 }));
 
 interface TasksTableProps {
+  date?: string
+  setBackDate?: React.Dispatch<React.SetStateAction<string>>
 
   // setSelectedCategory: (categoryId: number | null) => void;
 }
 
-export const TasksTable: React.FC<TasksTableProps> = ({ }) => {
+export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -279,7 +281,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ }) => {
     requestNotificationPermission();
   }, []);
 
- 
+
 
   // Check for upcoming tasks and trigger notifications
   useEffect(() => {
@@ -373,7 +375,9 @@ export const TasksTable: React.FC<TasksTableProps> = ({ }) => {
     try {
       setRefreshing(true);
       const response = await axios.post<Task[]>(
-        "http://localhost:5000/tasks/gettasks"
+        "http://localhost:5000/tasks/gettasks", {
+          date: date ? date : null
+      }
       );
 
 
@@ -392,7 +396,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, date ? [date]:[]);
 
   // Initial fetch
   useEffect(() => {
@@ -421,10 +425,10 @@ export const TasksTable: React.FC<TasksTableProps> = ({ }) => {
         completed: !completed,
       });
 
-      if (!completed && routine) {
+      if (routine) {
         console.log("completed routine")
 
-        await axios.post('http://localhost:5000/habits/habits', { taskName: Task.title, done: !completed, procrastinated: 0, weight: Task.weight, date: format(new Date(), 'yyyy-MM-dd') })
+        await axios.post('http://localhost:5000/habits/habits', { taskName: Task.title, done: !completed, procrastinated: 0, weight: Task.weight, date: date ? date : format(new Date(), 'yyyy-MM-dd') })
 
       }
 
@@ -448,10 +452,10 @@ export const TasksTable: React.FC<TasksTableProps> = ({ }) => {
         not_completed: !not_completed,
       });
 
-      if (!not_completed && routine) {
+      if (routine) {
         console.log("not completed routine")
 
-        await axios.post('http://localhost:5000/habits/habits', { taskName: Task.title, done: 0, procrastinated: !not_completed, weight: Task.weight, date: format(new Date(), 'yyyy-MM-dd') })
+        await axios.post('http://localhost:5000/habits/habits', { taskName: Task.title, done: 0, procrastinated: !not_completed, weight: Task.weight,  date: date ? date : format(new Date(), 'yyyy-MM-dd')  })
 
       }
 
@@ -475,10 +479,10 @@ export const TasksTable: React.FC<TasksTableProps> = ({ }) => {
         five: !five,
       });
 
-      if (!five && routine) {
+      if (routine) {
         console.log("not completed routine")
 
-        await axios.post('http://localhost:5000/habits/habits', { taskName: Task.title, done: 1, procrastinated: 0, date: format(new Date(), 'yyyy-MM-dd') })
+        await axios.post('http://localhost:5000/habits/habits', { taskName: Task.title, done: 1, procrastinated: 0,  date: date ? date : format(new Date(), 'yyyy-MM-dd') })
 
       }
 
@@ -743,6 +747,9 @@ export const TasksTable: React.FC<TasksTableProps> = ({ }) => {
           </Tooltip>
         </Box>
       </Box>
+
+      {date && <Button variant="contained"
+        color="primary" onClick={() => setBackDate && setBackDate('')}>({date}) - Close</Button>}
 
       <TableContainer
         component={Paper}

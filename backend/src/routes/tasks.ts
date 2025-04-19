@@ -339,7 +339,7 @@ router.post('/gettasks', async (req: Request, res: Response) => {
                     taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.procrastinated
                 );
 
-                return matchesHabitComplete ? { ...task, completed: true } : matchesHabitInComplete ? { ...task, not_completed: true } : task;
+                return matchesHabitComplete ? { ...task, completed: true } : matchesHabitInComplete ? { ...task, not_completed: true } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : task;
             });
 
 
@@ -373,7 +373,7 @@ router.post('/gettasks', async (req: Request, res: Response) => {
                     taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.procrastinated
                 );
 
-                return matchesHabitComplete ? { ...task, completed: true } : matchesHabitInComplete ? { ...task, not_completed: true } : task;
+                return matchesHabitComplete ? { ...task, completed: true } : matchesHabitInComplete ? { ...task, not_completed: true } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : task;
             });
 
         }

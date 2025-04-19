@@ -4,21 +4,65 @@ import { openDb } from '../index';
 const router = Router();
 
 // Create a new habit
-router.post('/habits', async (req, res) => {
-    const { taskName, done, procrastinated,weight,date } = req.body;
+// router.post('/habits', async (req, res) => {
+//     const { taskName, done, procrastinated, weight, date } = req.body;
+//     try {
+//         const db = await openDb();
+//         const result = await db.run(`
+//             INSERT INTO habit (taskName, done, procrastinated,weight, date) 
+//             VALUES (?, ?, ?, ?, ?)`,
+//             [taskName, done, procrastinated, weight, date]
+//         );
+
+  
+//         await db.close();
+//         res.status(201).json({ id: result.lastID });
+//     } catch (error) {
+//         res.status(500).json({ error: 'Failed to create habit' });
+//     }
+// });
+
+router.post('/habits', async (req: Request, res: Response) => {
+    const { taskName, done, procrastinated, weight, date } = req.body;
     try {
         const db = await openDb();
+        
+        // First ensure the unique index exists
+        await db.run(`
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_habit_task_date 
+            ON habit(taskName, date)
+        `);
+
+        // Then perform the upsert
         const result = await db.run(`
-            INSERT INTO habit (taskName, done, procrastinated,weight, date) 
-            VALUES (?, ?, ?, ?, ?)`,
-            [taskName, done, procrastinated,weight,date]
+            INSERT INTO habit (
+                taskName, 
+                done, 
+                procrastinated,
+                weight, 
+                date
+            ) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(taskName, date) DO UPDATE SET
+                done = ?,
+                procrastinated = ?,
+                weight = ?
+            `, [
+                taskName, done, procrastinated, weight, date,  // for INSERT
+                done, procrastinated, weight                   // for UPDATE
+            ]
         );
+        
         await db.close();
-        res.status(201).json({ id: result.lastID });
+        res.status(201).json({ 
+            id: result.lastID,
+            message: 'Habit created or updated successfully' 
+        });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to create habit' });
+        console.error('Error in habit upsert:', error);
+        res.status(500).json({ error: 'Failed to create or update habit' });
     }
 });
+
 
 // Get all habits
 router.get('/habits', async (req, res) => {
