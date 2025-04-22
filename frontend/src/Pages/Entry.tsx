@@ -104,12 +104,15 @@ const Entry: React.FC = () => {
       if (tasksResponse.length >= 4) {
         try {
           setRefresh(false);
+          const periodChange = parseInt(tasksResponse[0].split(':')[0]) < 12 && parseInt(tasksResponse[1].split(':')[0]) >= 12 ? period === 'AM' ? 'PM' : 'AM' : period
 
           const startTime = `${tasksResponse[0].trim()} ${period}`;
-          const endTime = `${tasksResponse[1].trim()} ${period}`;
+          const endTime = `${tasksResponse[1].trim()} ${periodChange}`;
           const taskName = tasksResponse[2].trim();
           const description = tasksResponse[3].trim();
           const weight = tasksResponse[4]?.trim();
+
+
 
           await axios.post(`${portUrl}/tasks/tasks`, {
             title: taskName,
@@ -171,7 +174,7 @@ const Entry: React.FC = () => {
       </Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-     
+
         <Button variant="outlined" onClick={() => setOpenTable(prev => !prev)}>
           {openTable ? 'Close Table' : 'Open Table'}
         </Button>
