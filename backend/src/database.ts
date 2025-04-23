@@ -104,10 +104,31 @@ const initDatabase = async () => {
 
   }
 
-  await db.run(
-    `DELETE from habit where id = 391 `,
-   
-);
+  const removeNotes = {
+    habits:false,
+    tasks:true
+
+  }
+  if(removeNotes){
+    if (removeNotes.habits){
+    
+      await db.run(
+        ` UPDATE habit set notes = NULL where id = 902 `,
+       
+    );
+    }
+    if (removeNotes.tasks){
+      console.log('ran')
+      await db.run(
+        ` UPDATE task set notes = NULL where id = 902 `,
+       
+      );
+    }
+
+
+
+
+  }
 
 
 

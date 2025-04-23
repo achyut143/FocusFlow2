@@ -46,9 +46,26 @@ export interface Task {
   reassign: boolean
   weight: number;
   five: boolean;
-  notes: string;
+  notes: string | null;
   habitId: number;
 }
+
+// Add interfaces for type safety
+interface DraftBlock {
+  key: string;
+  text: string;
+  type: string;
+  depth: number;
+  inlineStyleRanges: any[];
+  entityRanges: any[];
+  data: Record<string, any>;
+}
+
+interface RawDraftContent {
+  blocks: DraftBlock[];
+  entityMap: Record<string, any>;
+}
+
 
 const NOTIFICATION_SOUND = "/sounds/notification.mp3";
 
@@ -650,6 +667,32 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
   }));
 
 
+  // Helper function to clean content
+  const cleanContent = (content: string): string => {
+    try {
+        const parsed = JSON.parse(content);
+        
+        // Handle blockMap format
+        if (parsed.blockMap) {
+            return Object.values(parsed.blockMap)
+                .map((block: any) => block.text)
+                .join('\n');
+        }
+        
+        // Handle blocks format
+        if (parsed.blocks) {
+            return parsed.blocks.map((block: any) => block.text).join('\n');
+        }
+
+        // If neither format is found, return the original content
+        return content;
+    } catch (e) {
+        return content;
+    }
+};
+
+
+
 
 
 
@@ -978,21 +1021,36 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
 
 
                       </StyledTableCell>
-                      <StyledTableCell>  
+                      <StyledTableCell>
                         <Button
                           onClick={() => setOpenWYS(task.id)}
-                          variant={task.notes?.trim() ? "contained" : "outlined"}
-                          color={task.notes?.trim() ? "primary" : "inherit"}
+                          variant={task.notes ? "contained" : "outlined"}
+                          color={task.notes ? "primary" : "inherit"}
                           sx={{
                             '&:hover': {
-                              backgroundColor: task.notes?.trim() ? 'primary.dark' : 'rgba(0, 0, 0, 0.04)'
+                              backgroundColor: task.notes ? 'primary.dark' : 'rgba(0, 0, 0, 0.04)'
                             },
-                            minWidth: '120px'  // Ensures consistent button width
+                            minWidth: '120px'
                           }}
                         >
-                          {task.notes?.trim() ? `Open Notes` : `New Notes`}
+                          {task.notes ? 'Open Notes' : 'New Notes'}
                         </Button>
-                        {openWYS===task.id && <WYSIWYGEditor key={task.id} taskId={task.id} notes={task.notes} habit={Routine} date={date} Task={task} open={openWYS ? true : false} onClose={() => setOpenWYS(null)}
+                        {task.notes && (
+                          <Typography
+                            sx={{
+                              mt: 1,
+                              color: 'text.secondary',
+                              fontSize: '0.875rem',
+                              maxWidth: '200px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {cleanContent(task.notes)}
+                          </Typography>
+                        )}
+                        {openWYS === task.id && <WYSIWYGEditor key={task.id} taskId={task.id} notes={task.notes} habit={Routine} date={date} Task={task}  setTasks={setTasks} open={openWYS ? true : false} onClose={() => setOpenWYS(null) }
 
                         />}</StyledTableCell>
                     </RowComponent>
