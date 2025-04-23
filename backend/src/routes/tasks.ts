@@ -359,10 +359,17 @@ router.post('/gettasks', async (req: Request, res: Response) => {
                     taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.procrastinated
                 );
 
-                const notes = habitTasks.filter(habitName =>
-                    taskTitle.includes(habitName.taskName.toLowerCase()))[0].notes
+                const habit = habitTasks.filter(habitName =>
+                    taskTitle.includes(habitName.taskName.toLowerCase()))[0]
+              
 
-                return matchesHabitComplete ? { ...task, completed: true, notes: notes } : matchesHabitInComplete ? { ...task, not_completed: true, notes: notes } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false, notes: notes } : task;
+                if(habit === undefined){
+
+                return matchesHabitComplete ? { ...task, completed: true} : matchesHabitInComplete ? { ...task, not_completed: true } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : {...task};
+                }else{
+
+                return matchesHabitComplete ? { ...task, completed: true, notes: habit.notes, habitId: habit.id } : matchesHabitInComplete ? { ...task, not_completed: true, notes: habit.notes, habitId: habit.id } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false, notes: habit.notes, habitId: habit.id } : {...task, habitId:null};
+                }
             });
 
 
