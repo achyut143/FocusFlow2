@@ -26,9 +26,9 @@ const initDatabase = async () => {
 
 
 
-  if (createTables){
-      // Create the category table
-  await db.exec(`
+  if (createTables) {
+    // Create the category table
+    await db.exec(`
     CREATE TABLE IF NOT EXISTS category (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -38,7 +38,7 @@ const initDatabase = async () => {
 
 
     // // Create the task table
-  await db.exec(`
+    await db.exec(`
     CREATE TABLE IF NOT EXISTS task (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
@@ -52,11 +52,11 @@ const initDatabase = async () => {
     )
   `);
 
-   await db.exec(`
+    await db.exec(`
     ALTER TABLE task ADD COLUMN reassign BOOLEAN NOT NULL DEFAULT FALSE;
   `);
 
- 
+
 
 
     const DATABASE_CREATE_REMINDERS = `
@@ -70,13 +70,13 @@ const initDatabase = async () => {
       );
   `;
 
-  await db.exec(DATABASE_CREATE_REMINDERS)
+    await db.exec(DATABASE_CREATE_REMINDERS)
 
-  await db.exec(`ALTER TABLE reminders 
+    await db.exec(`ALTER TABLE reminders 
     ADD COLUMN alloted INTEGER DEFAULT 30;`);
 
-  
-      await db.exec(`
+
+    await db.exec(`
     CREATE TABLE habit (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       taskName TEXT NOT NULL,
@@ -86,25 +86,40 @@ const initDatabase = async () => {
     )
   `);
 
-  await db.exec(`
+    await db.exec(`
     ALTER TABLE habit ADD COLUMN weight REAL NOT NULL DEFAULT 0;
   `);
 
-  insertCategory('General', 1);
+    await db.exec(`
+    ALTER TABLE task ADD COLUMN notes TEXT;
+   `);
+
+    await db.exec(`
+     ALTER TABLE habit ADD COLUMN notes TEXT;
+    `);
+
+
+    insertCategory('General', 1);
 
 
   }
 
+  await db.run(
+    `DELETE from habit where id = 391 `,
+   
+);
 
 
 
 
 
- 
- 
- 
 
- 
+
+
+
+
+
+
 
 
 

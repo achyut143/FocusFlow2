@@ -63,6 +63,58 @@ router.post('/habits', async (req: Request, res: Response) => {
     }
 });
 
+router.post('/notes', async (req: Request, res: Response) => {
+    // const {notes, id} = req.body;
+    const { taskName, notes,  weight, date } = req.body;
+    try {
+        const db = await openDb();
+        
+        // First ensure the unique index exists
+        await db.run(`
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_habit_task_date 
+            ON habit(taskName, date)
+        `);
+
+        // Then perform the upsert
+        const result = await db.run(`
+            INSERT INTO habit (
+                taskName, 
+                notes,
+                weight, 
+                date
+            ) VALUES (?, ?, ?, ?)
+            ON CONFLICT(taskName, date) DO UPDATE SET
+                notes = ?
+            `, [
+                taskName,notes, weight, date,  // for INSERT
+               notes                   // for UPDATE
+            ]
+        );
+        
+        await db.close();
+        res.status(201).json({ 
+            id: result.lastID,
+            message: 'Habit created or updated successfully' 
+        });
+    } catch (error) {
+        console.error('Error in habit upsert:', error);
+        res.status(500).json({ error: 'Failed to create or update habit' });
+    }
+    // try {
+    //     const db = await openDb();
+    //     await db.run(
+    //         `UPDATE habit SET notes = ? WHERE id = ?`,
+    //         [notes, id]
+    //     );
+    //     await db.close();
+    //     res.status(201).json({ notes: notes });
+    
+    // } catch(err) {
+    //     console.error('Error updating notes:', err);
+    //     res.status(500).json({ message: 'Error updating notes' });
+    // }
+});
+
 
 // Get all habits
 router.get('/habits', async (req, res) => {

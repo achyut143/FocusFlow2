@@ -304,6 +304,24 @@ async function createTimeBlockedTasks(db: any, tasks: any[], rest: number, slot:
 
 }
 
+router.post('/notes', async (req: Request, res: Response) => {
+    const { notes, id } = req.body;
+    try {
+        const db = await openDb();
+        await db.run(
+            `UPDATE task SET notes = ? WHERE id = ?`,
+            [notes, id]
+        );
+        await db.close();
+        res.status(201).json({ notes: notes });
+
+    } catch (err) {
+        console.error('Error updating notes:', err);
+        res.status(500).json({ message: 'Error updating notes' });
+    }
+});
+
+
 
 
 
@@ -341,7 +359,10 @@ router.post('/gettasks', async (req: Request, res: Response) => {
                     taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.procrastinated
                 );
 
-                return matchesHabitComplete ? { ...task, completed: true } : matchesHabitInComplete ? { ...task, not_completed: true } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : task;
+                const notes = habitTasks.filter(habitName =>
+                    taskTitle.includes(habitName.taskName.toLowerCase()))[0].notes
+
+                return matchesHabitComplete ? { ...task, completed: true, notes: notes } : matchesHabitInComplete ? { ...task, not_completed: true, notes: notes } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false, notes: notes } : task;
             });
 
 
@@ -375,7 +396,17 @@ router.post('/gettasks', async (req: Request, res: Response) => {
                     taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.procrastinated
                 );
 
-                return matchesHabitComplete ? { ...task, completed: true } : matchesHabitInComplete ? { ...task, not_completed: true } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : task;
+                const habit = habitTasks.filter(habitName =>
+                    taskTitle.includes(habitName.taskName.toLowerCase()))[0]
+              
+
+                if(habit === undefined){
+
+                return matchesHabitComplete ? { ...task, completed: true} : matchesHabitInComplete ? { ...task, not_completed: true } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : {...task};
+                }else{
+
+                return matchesHabitComplete ? { ...task, completed: true, notes: habit.notes, habitId: habit.id } : matchesHabitInComplete ? { ...task, not_completed: true, notes: habit.notes, habitId: habit.id } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false, notes: habit.notes, habitId: habit.id } : {...task, habitId:null};
+                }
             });
 
         }

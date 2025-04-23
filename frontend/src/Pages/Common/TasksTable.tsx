@@ -31,9 +31,10 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { format } from "date-fns";
 import Timer from "./Timer";
 import { InternationaltimeZone, portUrl } from "../../AppConfiguration";
+import WYSIWYGEditor from "./WYSIWYGEditor";
 
 // Interfaces
-interface Task {
+export interface Task {
   id: number;
   title: string;
   description: string;
@@ -44,7 +45,9 @@ interface Task {
   not_completed: boolean;
   reassign: boolean
   weight: number;
-  five: boolean
+  five: boolean;
+  notes: string;
+  habitId: number;
 }
 
 const NOTIFICATION_SOUND = "/sounds/notification.mp3";
@@ -377,7 +380,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
       setRefreshing(true);
       const response = await axios.post<Task[]>(
         `${portUrl}/tasks/gettasks`, {
-          date: date ? date : null
+        date: date ? date : null
       }
       );
 
@@ -397,7 +400,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
       setLoading(false);
       setRefreshing(false);
     }
-  }, date ? [date]:[]);
+  }, date ? [date] : []);
 
   // Initial fetch
   useEffect(() => {
@@ -456,7 +459,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
       if (routine) {
         console.log("not completed routine")
 
-        await axios.post(`${portUrl}/habits/habits`, { taskName: Task.title, done: 0, procrastinated: !not_completed, weight: Task.weight,  date: date ? date : format(new Date(), 'yyyy-MM-dd')  })
+        await axios.post(`${portUrl}/habits/habits`, { taskName: Task.title, done: 0, procrastinated: !not_completed, weight: Task.weight, date: date ? date : format(new Date(), 'yyyy-MM-dd') })
 
       }
 
@@ -483,7 +486,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
       if (routine) {
         console.log("not completed routine")
 
-        await axios.post(`${portUrl}/habits/habits`, { taskName: Task.title, done: 1, procrastinated: 0,  date: date ? date : format(new Date(), 'yyyy-MM-dd') })
+        await axios.post(`${portUrl}/habits/habits`, { taskName: Task.title, done: 1, procrastinated: 0, date: date ? date : format(new Date(), 'yyyy-MM-dd') })
 
       }
 
@@ -625,6 +628,8 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
       console.error("Error updating task:", err);
     }
   };
+
+  const [openWYS, setOpenWYS] = useState<number | null>(null)
 
 
   const renderDescription = (description: string) => {
@@ -776,6 +781,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
               <StyledTableCell>Edit</StyledTableCell>
               <StyledTableCell>5-Min</StyledTableCell>
               <StyledTableCell>S.Del</StyledTableCell>
+              <StyledTableCell>Notes</StyledTableCell>
             </TableRow>
           </StyledTableHead>
 
@@ -972,6 +978,23 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
 
 
                       </StyledTableCell>
+                      <StyledTableCell>  
+                        <Button
+                          onClick={() => setOpenWYS(task.id)}
+                          variant={task.notes?.trim() ? "contained" : "outlined"}
+                          color={task.notes?.trim() ? "primary" : "inherit"}
+                          sx={{
+                            '&:hover': {
+                              backgroundColor: task.notes?.trim() ? 'primary.dark' : 'rgba(0, 0, 0, 0.04)'
+                            },
+                            minWidth: '120px'  // Ensures consistent button width
+                          }}
+                        >
+                          {task.notes?.trim() ? `Open Notes` : `New Notes`}
+                        </Button>
+                        {openWYS===task.id && <WYSIWYGEditor key={task.id} taskId={task.id} notes={task.notes} habit={Routine} date={date} Task={task} open={openWYS ? true : false} onClose={() => setOpenWYS(null)}
+
+                        />}</StyledTableCell>
                     </RowComponent>
                   </Tooltip>
               );
@@ -980,6 +1003,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
 
         </Table>
       </TableContainer>
+
 
 
       <Box
