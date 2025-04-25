@@ -7,6 +7,7 @@ import {
     convertToRaw,
     Modifier,
     DraftHandleValue,
+    RichUtils,
 } from 'draft-js';
 import 'draft-js/dist/Draft.css';
 import axios from 'axios';
@@ -21,9 +22,10 @@ import {
     Button,
     IconButton,
     Toolbar,
+    Menu,
+    MenuItem,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { RichUtils } from 'draft-js';
 
 interface Props {
     taskId: number;
@@ -36,6 +38,15 @@ interface Props {
     onClose: () => void;
 }
 
+const colorStyleMap = {
+    'COLOR-red': { color: 'red' },
+    'COLOR-green': { color: 'green' },
+    'COLOR-blue': { color: 'blue' },
+    'COLOR-black': { color: 'black' },
+    'COLOR-orange': { color: 'orange' },
+    'COLOR-purple': { color: 'purple' },
+};
+
 const WYSIWYGEditor: React.FC<Props> = ({
     taskId,
     notes,
@@ -47,6 +58,8 @@ const WYSIWYGEditor: React.FC<Props> = ({
     onClose,
 }) => {
     const [editorState, setEditorState] = useState(EditorState.createEmpty());
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedColor, setSelectedColor] = useState<string>('black');
 
     const handleEditorChange = (state: EditorState) => {
         setEditorState(state);
@@ -171,6 +184,18 @@ const WYSIWYGEditor: React.FC<Props> = ({
         setEditorState(RichUtils.toggleBlockType(editorState, 'unordered-list-item'));
     };
 
+    const handleColorClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleColorSelect = (color: string) => {
+        setSelectedColor(color);
+        setEditorState(RichUtils.toggleInlineStyle(editorState, `COLOR-${color}`));
+        setAnchorEl(null);
+    };
+
+    const colorOptions = ['red', 'green', 'blue', 'black', 'orange', 'purple'];
+
     return (
         <Dialog
             open={open}
@@ -198,6 +223,22 @@ const WYSIWYGEditor: React.FC<Props> = ({
                     <Button onClick={toggleBold}>Bold</Button>
                     <Button onClick={toggleUnderline}>Underline</Button>
                     <Button onClick={toggleBulletPoints}>Bullet Points</Button>
+                    <Button onClick={handleColorClick}>Color</Button>
+                    <Menu
+                        anchorEl={anchorEl}
+                        open={Boolean(anchorEl)}
+                        onClose={() => setAnchorEl(null)}
+                    >
+                        {colorOptions.map(color => (
+                            <MenuItem
+                                key={color}
+                                onClick={() => handleColorSelect(color)}
+                                style={{ color }}
+                            >
+                                {color}
+                            </MenuItem>
+                        ))}
+                    </Menu>
                 </Toolbar>
                 <div style={{
                     minHeight: '200px',
@@ -205,11 +246,14 @@ const WYSIWYGEditor: React.FC<Props> = ({
                     padding: '10px',
                     borderRadius: '4px'
                 }}>
+                   
                     <Editor
                         editorState={editorState}
                         onChange={handleEditorChange}
                         handlePastedText={handlePastedText}
+                        customStyleMap={colorStyleMap}
                     />
+
                 </div>
             </DialogContent>
             <DialogActions>
