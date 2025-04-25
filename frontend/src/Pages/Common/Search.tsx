@@ -15,7 +15,7 @@ export interface searchFilters {
 }
 
 export const Search: React.FC<SearchProps> = ({ }) => {
-  const [searchText, setSearchText] = useState<searchFilters>({ text: '', page: 1, limit: 50, notes: true, date: '' })
+  const [searchText, setSearchText] = useState<searchFilters>({ text: '', page: 1, limit: 1, notes: true, date: '' })
   const [delayedText, setDelayedText] = useState<searchFilters>(searchText)
 
 

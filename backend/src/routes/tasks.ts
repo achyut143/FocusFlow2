@@ -334,7 +334,7 @@ router.post('/gettasks', async (req: Request, res: Response) => {
         let habitTasks = [];
         if(search){
 
-            if(search.text){
+            // if(search.text){
              tasks = await db.all(`
                 SELECT * FROM task 
                 WHERE title LIKE ? 
@@ -351,7 +351,7 @@ router.post('/gettasks', async (req: Request, res: Response) => {
                 habit.taskName.toLowerCase()
             );
 
-            console.log('1st find',habitTasks)
+         
             habitTasks = habitTasks.map((habit) => {
                 // Find the task that has the same name as the habit
                 const matchingTask = tasks.find((task) => task.title === habit.taskName);
@@ -374,7 +374,7 @@ router.post('/gettasks', async (req: Request, res: Response) => {
 
             
 
-            console.log('blab',tasks)
+          console.log('377',tasks.length)
              tasks = tasks?.sort((a, b) => {
                 // Convert start times to 24-hour format for comparison
                 const getTimeValue = (timeStr: string) => {
@@ -413,23 +413,28 @@ router.post('/gettasks', async (req: Request, res: Response) => {
                 return endTimeA - endTimeB; // Sort by end time
             });
             await db.close();
+            console.log('416',tasks.length)
 
-            if(search.page && search.limit){
-                const startIndex = (search.page - 1) * search.limit;
-                const endIndex = startIndex + search.limit;
-                tasks = tasks.slice(startIndex, endIndex);         
-            }
+         
 
+            console.log('424',tasks.length)
             if(search.notes){
                 tasks = tasks.filter((row)=>row.notes !== null);   
 
             }
+            console.log('429',tasks.length)
 
             if(search.date){
                 tasks = tasks.filter((row)=>row.date === search.date);
 
             }
-        }
+            if(search.page && search.limit){
+                const startIndex = (search.page - 1) * search.limit;
+                const endIndex = startIndex + search.limit;
+                tasks = tasks.slice(startIndex, endIndex);         
+            }
+            console.log('433',tasks.length)
+        // }
             res.json(tasks);
        
 
