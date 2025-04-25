@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Paper, Typography, Box, Tooltip, Tab, Tabs } from '@mui/material';
+import { Paper, Typography, Box, Tooltip, Tab, Tabs, TextField } from '@mui/material';
 import { format, subDays, isSameDay, parseISO, startOfDay } from 'date-fns';
 import { portUrl } from '../AppConfiguration';
 
@@ -14,14 +14,14 @@ interface HabitDay {
 
 interface HabitCalendarProps {
   habitData: HabitDay[];
-  noOfDays:number;
+  noOfDays: number;
 }
 
-const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData,noOfDays }) => {
+const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays }) => {
   const [selectedHabit, setSelectedHabit] = useState<string>('');
-  
+
   const habitNames = Array.from(new Set(habitData.map(habit => habit.taskName)));
-  
+
   useEffect(() => {
     if (habitNames.length > 0 && !selectedHabit) {
       setSelectedHabit(habitNames[0]);
@@ -34,8 +34,8 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData,noOfDays }) => 
   });
 
   const getStatusForDay = (date: Date) => {
-    const dayData = habitData.find(habit => 
-      habit.taskName === selectedHabit && 
+    const dayData = habitData.find(habit =>
+      habit.taskName === selectedHabit &&
       isSameDay(startOfDay(parseISO(habit.date)), startOfDay(date))
     );
 
@@ -57,13 +57,13 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData,noOfDays }) => 
   };
 
   const getTooltipText = (date: Date) => {
-    const dayData = habitData.find(habit => 
-      habit.taskName === selectedHabit && 
+    const dayData = habitData.find(habit =>
+      habit.taskName === selectedHabit &&
       isSameDay(startOfDay(parseISO(habit.date)), startOfDay(date))
     );
 
     if (!dayData) return `No data for ${format(date, 'MMM d')}`;
-    
+
     return `${format(date, 'MMM d')}:
       ${dayData.completed_tasks} completed,
       ${dayData.not_completed_tasks} procrastinated`;
@@ -74,7 +74,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData,noOfDays }) => 
       <Typography variant="h6" gutterBottom>
         Habit Tracker
       </Typography>
-      
+
       <Tabs
         value={selectedHabit}
         onChange={(_, newValue) => setSelectedHabit(newValue)}
@@ -83,15 +83,15 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData,noOfDays }) => 
         sx={{ mb: 3 }}
       >
         {habitNames.map(habitName => (
-          <Tab 
+          <Tab
             key={habitName}
-            label={habitName.slice(0,-16)}
+            label={habitName.slice(0, -16)}
             value={habitName}
           />
         ))}
       </Tabs>
 
-      <Box sx={{ 
+      <Box sx={{
         display: 'grid',
         gridTemplateColumns: 'repeat(7, 1fr)',
         gap: 1,
@@ -131,9 +131,9 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData,noOfDays }) => 
                   alignItems: 'center',
                 }}
               >
-                <Typography 
-                  variant="caption" 
-                  sx={{ 
+                <Typography
+                  variant="caption"
+                  sx={{
                     fontSize: '0.7rem',
                     color: getStatusForDay(date) === 'no-data' ? '#666' : '#fff',
                     lineHeight: 1,
@@ -201,7 +201,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData,noOfDays }) => 
 const Dashboard: React.FC = () => {
   const [habitData, setHabitData] = useState<HabitDay[]>([]);
   const [loading, setLoading] = useState(true);
-  const [noOfDays,setNoOfDays] = useState(30)
+  const [noOfDays, setNoOfDays] = useState(30)
 
   useEffect(() => {
     const fetchHabitData = async () => {
@@ -225,7 +225,19 @@ const Dashboard: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <HabitCalendar habitData={habitData} noOfDays={noOfDays}/>
+      <TextField
+        id="outlined-number"
+        label="No of Days"
+        type="number"
+        value={noOfDays}
+        onChange={(e) => setNoOfDays(parseInt(e.target.value))}
+        slotProps={{
+          inputLabel: {
+            shrink: true,
+          },
+        }}
+      />
+      <HabitCalendar habitData={habitData} noOfDays={noOfDays} />
     </Box>
   );
 };

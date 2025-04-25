@@ -327,10 +327,120 @@ router.post('/notes', async (req: Request, res: Response) => {
 
 // Read all tasks
 router.post('/gettasks', async (req: Request, res: Response) => {
-    const { date } = req.body;
+    const { date,search } = req.body;
     try {
         const db = await openDb();
-        let tasks;
+        let tasks: any[] = [];
+        let habitTasks = [];
+        if(search){
+
+            if(search.text){
+             tasks = await db.all(`
+                SELECT * FROM task 
+                WHERE title LIKE ? 
+              
+            `, [`%${search.text}%`]);
+
+             habitTasks = await db.all(`
+                SELECT * FROM habit 
+               WHERE taskName LIKE ?
+            `, [`%${search.text}%`]);
+            
+
+            const habitTaskNames = habitTasks.map(habit =>
+                habit.taskName.toLowerCase()
+            );
+
+            console.log('1st find',habitTasks)
+            habitTasks = habitTasks.map((habit) => {
+                // Find the task that has the same name as the habit
+                const matchingTask = tasks.find((task) => task.title === habit.taskName);
+            
+                // If a matching task is found, return a new object without the date property
+                if (matchingTask) {
+                
+                    return {...matchingTask,date:habit.date,weight:habit.weight,completed:habit.done,not_completed:habit.procrastinated,notes:habit.notes} // Return the task object without the date
+                }
+            
+                // If no matching task is found, return the habit as is or handle as needed
+                return null;
+            });
+
+            habitTasks = habitTasks.filter((habit) => habit !== null)
+
+            tasks = tasks.filter((task)=>!task.title.includes('I get to do it'))
+
+            tasks = [...tasks,...habitTasks]
+
+            
+
+            console.log('blab',tasks)
+             tasks = tasks?.sort((a, b) => {
+                // Convert start times to 24-hour format for comparison
+                const getTimeValue = (timeStr: string) => {
+                    const [time, period] = timeStr.split(' ');
+                    let [hours, minutes] = time.split(':').map(Number);
+            
+                    // Convert to 24-hour format
+                    if (period === 'PM' && hours !== 12) {
+                        hours += 12;
+                    } else if (period === 'AM' && hours === 12) {
+                        hours = 0;
+                    }
+            
+                    return hours * 60 + minutes; // Convert to minutes for easier comparison
+                };
+            
+                // Compare dates
+                const dateA = new Date(a.date); // Assuming 'date' is the property name for date
+                const dateB = new Date(b.date);
+            
+                if (dateA.getTime() !== dateB.getTime()) {
+                    return dateA.getTime() - dateB.getTime(); // Sort by date
+                }
+            
+                // If dates are equal, compare start times
+                const startTimeA = getTimeValue(a.start_time);
+                const startTimeB = getTimeValue(b.start_time);
+            
+                if (startTimeA !== startTimeB) {
+                    return startTimeA - startTimeB; // Sort by start time
+                }
+            
+                // If start times are equal, compare end times
+                const endTimeA = getTimeValue(a.end_time);
+                const endTimeB = getTimeValue(b.end_time);
+                return endTimeA - endTimeB; // Sort by end time
+            });
+            await db.close();
+
+            if(search.page && search.limit){
+                const startIndex = (search.page - 1) * search.limit;
+                const endIndex = startIndex + search.limit;
+                tasks = tasks.slice(startIndex, endIndex);         
+            }
+
+            if(search.notes){
+                tasks = tasks.filter((row)=>row.notes !== null);   
+
+            }
+
+            if(search.date){
+                tasks = tasks.filter((row)=>row.date === search.date);
+
+            }
+        }
+            res.json(tasks);
+       
+
+            
+
+           
+
+           
+        
+
+        }else{
         if (date) {
             tasks = await db.all(`
                 SELECT * FROM task 
@@ -352,7 +462,7 @@ router.post('/gettasks', async (req: Request, res: Response) => {
                 const taskTitle = task.title.toLowerCase();
                 // Check if any habit task name is included in the task title
                 const matchesHabitComplete = habitTasks.some(habitName =>
-                    taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.done
+                    taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.done 
                 );
 
                 const matchesHabitInComplete = habitTasks.some(habitName =>
@@ -418,8 +528,7 @@ router.post('/gettasks', async (req: Request, res: Response) => {
 
         }
 
-        // Sort tasks by time
-        const sortedTasks = tasks.sort((a, b) => {
+        const sortedTasks = tasks?.sort((a, b) => {
             // Convert start times to 24-hour format for comparison
             const getTimeValue = (timeStr: string) => {
                 const [time, period] = timeStr.split(' ');
@@ -448,9 +557,16 @@ router.post('/gettasks', async (req: Request, res: Response) => {
             const endTimeB = getTimeValue(b.end_time);
             return endTimeA - endTimeB;
         });
-
         await db.close();
         res.json(sortedTasks);
+    }
+
+        // Sort tasks by time
+      
+      
+    
+
+       
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch tasks' });
     }

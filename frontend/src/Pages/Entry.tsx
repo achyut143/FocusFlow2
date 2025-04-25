@@ -4,7 +4,7 @@ import Button from "@mui/material/Button";
 import { Box, FormControl, MenuItem, Paper, Select, TextField, styled } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import { TasksTable } from "./Common/TasksTable";
-import { Points } from "./Common/Points";
+
 import Reminder from "./Reminder";
 import { InternationaltimeZone, portUrl } from "../AppConfiguration";
 

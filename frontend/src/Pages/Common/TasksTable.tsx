@@ -32,10 +32,12 @@ import { format } from "date-fns";
 import Timer from "./Timer";
 import { InternationaltimeZone, portUrl } from "../../AppConfiguration";
 import WYSIWYGEditor from "./WYSIWYGEditor";
+import { searchFilters } from "./Search";
 
 // Interfaces
 export interface Task {
   id: number;
+  
   title: string;
   description: string;
   start_time: string;
@@ -48,6 +50,7 @@ export interface Task {
   five: boolean;
   notes: string | null;
   habitId: number;
+  date?:Date;
 }
 
 // Add interfaces for type safety
@@ -264,11 +267,12 @@ const RegularRow = styled(TableRow)(({ theme }) => ({
 interface TasksTableProps {
   date?: string
   setBackDate?: React.Dispatch<React.SetStateAction<string>>
+  search?:searchFilters
 
   // setSelectedCategory: (categoryId: number | null) => void;
 }
 
-export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => {
+export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -395,13 +399,25 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
   const fetchTasks = useCallback(async () => {
     try {
       setRefreshing(true);
-      const response = await axios.post<Task[]>(
+      let response;
+      if(search){
+         response = await axios.post<Task[]>(
+          `${portUrl}/tasks/gettasks`, {
+          
+          search: search
+        }
+        );
+      
+  
+        setTasks(response.data);
+        console.log('response123', response)
+        setError(null);
+      }else{
+       response = await axios.post<Task[]>(
         `${portUrl}/tasks/gettasks`, {
         date: date ? date : null
       }
       );
-
-
       const sortedTasks = response.data.sort((a, b) => {
         const timeA = new Date(`2024-01-01 ${a.start_time}`).getTime();
         const timeB = new Date(`2024-01-01 ${b.start_time}`).getTime();
@@ -410,6 +426,10 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
 
       setTasks(sortedTasks);
       setError(null);
+    }
+
+
+     
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch tasks");
       console.error("Error fetching tasks:", err);
@@ -417,12 +437,12 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
       setLoading(false);
       setRefreshing(false);
     }
-  }, date ? [date] : []);
+  },  date ? [date] : [search],);
 
   // Initial fetch
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]);
+  }, [fetchTasks,search]);
 
   // Auto-refresh setup
   const { nextRefresh, toggleRefresh, isActive } = useAutoRefresh(
@@ -814,6 +834,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
         <Table stickyHeader sx={{ minWidth: 650 }} aria-label="tasks table">
           <StyledTableHead>
             <TableRow>
+              {search &&   <StyledTableCell>Date</StyledTableCell>}
               <StyledTableCell>Start Time</StyledTableCell>
               <StyledTableCell>End Time</StyledTableCell>
               <StyledTableCell>Task</StyledTableCell>
@@ -895,6 +916,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
                     placement="top"
                   >
                     <RowComponent >
+                    {search &&  task.date && <StyledTableCell><>{task.date}</></StyledTableCell>}
                       <StyledTableCell>
                         {(() => {
                           // Get current time in EST
@@ -937,6 +959,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
                       <StyledTableCell> {renderDescription(task.description)}</StyledTableCell>
                       <StyledTableCell >
                         <Checkbox
+                        disabled={search ? true:false}
                           checked={task.completed}
                           onChange={() =>
                             handleTaskCompletion(task, task.completed, task.title.toLowerCase().includes("i get to do it"))
@@ -946,6 +969,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
                       </StyledTableCell>
                       <StyledTableCell >
                         <Checkbox
+                          disabled={search ? true:false}
                           checked={task.not_completed}
                           onChange={() =>
                             handleTaskNonCompletion(task, task.not_completed, task.title.toLowerCase().includes("i get to do it"))
@@ -956,6 +980,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
                       </StyledTableCell>
                       <StyledTableCell >
                         <Checkbox
+                          disabled={search ? true:false}
                           checked={task.reassign}
                           onChange={() =>
                             handleTaskReassign(task, task.reassign)
@@ -991,6 +1016,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
                       </StyledTableCell>
                       <StyledTableCell>
                         <Checkbox
+                          disabled={search ? true:false}
                           checked={task.five}
                           onChange={() =>
                             handle5minCompletion(task, task.five, task.title.toLowerCase().includes("i get to do it"))
@@ -1002,6 +1028,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate }) => 
                       <StyledTableCell>
                         {!Routine && <DeleteForeverIcon
                           onClick={() => handleDeleteForeverTask(task.id)}
+                          
                           sx={{
                             color: 'red',
                             cursor: 'pointer',
