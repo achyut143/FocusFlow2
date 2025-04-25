@@ -142,7 +142,7 @@ const PointsCalendar: React.FC<PointsCalendarProps> = ({ pointsData, setBackDate
                             sx={{
                                 position: 'relative',
                                 width: '100%',
-                                paddingBottom: '100%',
+                                paddingBottom: '60%',
                                 backgroundColor: getColorForPoints(getPointsForDate(date)),
                                 borderRadius: 1,
                                 cursor: 'pointer',
@@ -170,7 +170,7 @@ const PointsCalendar: React.FC<PointsCalendarProps> = ({ pointsData, setBackDate
                                 <Typography
                                     variant="caption"
                                     sx={{
-                                        fontSize: '0.7rem',
+                                        fontSize: '1rem',
                                         color: getPointsForDate(date) ? '#fff' : '#666',
                                         lineHeight: 1,
                                         textAlign: 'center',

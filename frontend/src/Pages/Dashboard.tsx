@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Paper, Typography, Box, Tooltip, Tab, Tabs, TextField } from '@mui/material';
 import { format, subDays, isSameDay, parseISO, startOfDay } from 'date-fns';
@@ -15,9 +14,10 @@ interface HabitDay {
 interface HabitCalendarProps {
   habitData: HabitDay[];
   noOfDays: number;
+  setPercentage: React.Dispatch<React.SetStateAction<number>>;
 }
 
-const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays }) => {
+const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays, setPercentage }) => {
   const [selectedHabit, setSelectedHabit] = useState<string>('');
 
   const habitNames = Array.from(new Set(habitData.map(habit => habit.taskName)));
@@ -29,7 +29,6 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays }) =>
   }, [habitNames]);
 
   const last30Days = Array.from({ length: noOfDays }, (_, i) => {
-    // Use startOfDay to normalize the time to midnight
     return startOfDay(subDays(new Date(), noOfDays - i - 1));
   });
 
@@ -44,6 +43,34 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays }) =>
     if (dayData.not_completed_tasks > 0) return 'procrastinated';
     return 'no-data';
   };
+
+  const calculateStats = () => {
+    let completedCount = 0;
+    let notCompletedCount = 0;
+    let noDataCount = 0;
+
+    last30Days.forEach(date => {
+      const status = getStatusForDay(date);
+      if (status === 'completed') {
+        completedCount++;
+      } else if (status === 'procrastinated') {
+        notCompletedCount++;
+      } else {
+        noDataCount++;
+      }
+    });
+
+    // Calculate percentage of completed tasks
+    const totalDays = completedCount + notCompletedCount + noDataCount;
+    const percentage = totalDays > 0 ? (completedCount / totalDays) * 100 : 0;
+
+    // Set the percentage in the parent component
+    setPercentage(percentage);
+
+    return { completedCount, notCompletedCount, noDataCount };
+  };
+
+  const { completedCount, notCompletedCount, noDataCount } = calculateStats();
 
   const getColorForStatus = (status: string) => {
     switch (status) {
@@ -107,7 +134,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays }) =>
               sx={{
                 position: 'relative',
                 width: '100%',
-                paddingBottom: '100%',
+                paddingBottom: '40%',
                 backgroundColor: getColorForStatus(getStatusForDay(date)),
                 borderRadius: 1,
                 cursor: 'pointer',
@@ -134,7 +161,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays }) =>
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: '0.7rem',
+                    fontSize: '1rem',
                     color: getStatusForDay(date) === 'no-data' ? '#666' : '#fff',
                     lineHeight: 1,
                     textAlign: 'center',
@@ -142,7 +169,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays }) =>
                   }}
                 >
                   {format(date, 'd')}
-                  <br />
+                 
                   {format(date, 'MMM')}
                   <br />
                   {`${format(date, 'EEE')}`}
@@ -164,7 +191,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays }) =>
               mr: 1
             }}
           />
-          <Typography variant="caption">Completed</Typography>
+          <Typography variant="caption">Completed: {completedCount}</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Box
@@ -176,7 +203,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays }) =>
               mr: 1
             }}
           />
-          <Typography variant="caption">Procrastinated</Typography>
+          <Typography variant="caption">Procrastinated: {notCompletedCount}</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Box
@@ -188,20 +215,19 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays }) =>
               mr: 1
             }}
           />
-          <Typography variant="caption">No Data</Typography>
+          <Typography variant="caption">No Data: {noDataCount}</Typography>
         </Box>
       </Box>
     </Paper>
   );
 };
 
-
-
 // Usage example
 const Dashboard: React.FC = () => {
   const [habitData, setHabitData] = useState<HabitDay[]>([]);
   const [loading, setLoading] = useState(true);
-  const [noOfDays, setNoOfDays] = useState(30)
+  const [noOfDays, setNoOfDays] = useState(30);
+  const [percentage, setPercentage] = useState(0);
 
   useEffect(() => {
     const fetchHabitData = async () => {
@@ -237,11 +263,12 @@ const Dashboard: React.FC = () => {
           },
         }}
       />
-      <HabitCalendar habitData={habitData} noOfDays={noOfDays} />
+      <HabitCalendar habitData={habitData} noOfDays={noOfDays} setPercentage={setPercentage} />
+      <Typography variant="h6" sx={{ mt: 2 }}>
+        Completion Percentage: {percentage.toFixed(2)}%
+      </Typography>
     </Box>
   );
 };
 
 export default Dashboard;
-
-
