@@ -480,10 +480,10 @@ router.post('/gettasks', async (req: Request, res: Response) => {
 
                 if(habit === undefined){
 
-                return matchesHabitComplete ? { ...task, completed: true} : matchesHabitInComplete ? { ...task, not_completed: true } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : {...task};
+                return matchesHabitComplete ? { ...task, completed: true,not_completed:false} : matchesHabitInComplete ? { ...task, not_completed: true,completed:false } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : {...task};
                 }else{
 
-                return matchesHabitComplete ? { ...task, completed: true, notes: habit.notes, habitId: habit.id } : matchesHabitInComplete ? { ...task, not_completed: true, notes: habit.notes, habitId: habit.id } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false, notes: habit.notes, habitId: habit.id } : {...task, habitId:null};
+                return matchesHabitComplete ? { ...task, completed: true,not_completed:false, notes: habit.notes, habitId: habit.id } : matchesHabitInComplete ? { ...task, not_completed: true, notes: habit.notes, habitId: habit.id,completed:false } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false, notes: habit.notes, habitId: habit.id } : {...task, habitId:null};
                 }
             });
 
@@ -524,10 +524,10 @@ router.post('/gettasks', async (req: Request, res: Response) => {
 
                 if(habit === undefined){
 
-                return matchesHabitComplete ? { ...task, completed: true} : matchesHabitInComplete ? { ...task, not_completed: true } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : {...task};
+                return matchesHabitComplete ? { ...task, completed: true,not_completed:false} : matchesHabitInComplete ? { ...task, not_completed: true,completed:false } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : {...task};
                 }else{
 
-                return matchesHabitComplete ? { ...task, completed: true, notes: habit.notes, habitId: habit.id } : matchesHabitInComplete ? { ...task, not_completed: true, notes: habit.notes, habitId: habit.id } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false, notes: habit.notes, habitId: habit.id } : {...task, habitId:null};
+                return matchesHabitComplete ? { ...task, completed: true,not_completed:false, notes: habit.notes, habitId: habit.id } : matchesHabitInComplete ? { ...task, not_completed: true, notes: habit.notes, habitId: habit.id ,completed:false} : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false, notes: habit.notes, habitId: habit.id } : {...task, habitId:null};
                 }
             });
 
