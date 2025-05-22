@@ -11,18 +11,19 @@ export interface searchFilters {
   page?: number,
   limit?: number;
   notes?: boolean;
-  date?: string;
+  startDate?: string;
+  endDate?:string;
 }
 
 export const Search: React.FC<SearchProps> = ({ }) => {
-  const [searchText, setSearchText] = useState<searchFilters>({ text: '', page: 1, limit: 1, notes: true, date: '' })
+  const [searchText, setSearchText] = useState<searchFilters>({ text: '', notes: true, startDate: '',endDate:'' })
   const [delayedText, setDelayedText] = useState<searchFilters>(searchText)
 
 
   return <>
     <TextField id="outlined-basic" label="Search by Task Name" variant="outlined" value={searchText.text} onChange={(e) => setSearchText({ ...searchText, text: e.target.value })} sx={{ width: '40%' }} />
 
-    <TextField
+    {/* <TextField
       id="outlined-number"
       label="page"
       type="number"
@@ -34,9 +35,9 @@ export const Search: React.FC<SearchProps> = ({ }) => {
           shrink: true,
         },
       }}
-    />
+    /> */}
 
-    <TextField
+    {/* <TextField
       id="outlined-number"
       label="limit"
       type="number"
@@ -48,15 +49,29 @@ export const Search: React.FC<SearchProps> = ({ }) => {
           shrink: true,
         },
       }}
-    />
+    /> */}
   
   <TextField
       id="outlined-number"
-      label="Date"
+      label="Start Date"
       type="date"
       sx={{ width: '20%' }}
-      value={searchText.date}
-      onChange={(e) => setSearchText({ ...searchText, date:e.target.value })}
+      value={searchText.startDate}
+      onChange={(e) => setSearchText({ ...searchText, startDate:e.target.value })}
+      slotProps={{
+        inputLabel: {
+          shrink: true,
+        },
+      }}
+    />
+
+<TextField
+      id="outlined-number"
+      label="End Date"
+      type="date"
+      sx={{ width: '20%' }}
+      value={searchText.endDate}
+      onChange={(e) => setSearchText({ ...searchText, endDate:e.target.value })}
       slotProps={{
         inputLabel: {
           shrink: true,
@@ -85,7 +100,7 @@ export const Search: React.FC<SearchProps> = ({ }) => {
   
 
       <Button variant="contained" color="secondary" onClick={()=>setDelayedText(searchText)}>Search</Button>
-    <TasksTable search={delayedText} />
+    {delayedText.text && <TasksTable search={delayedText} />}
 
   </>
 

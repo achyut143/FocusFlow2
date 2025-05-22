@@ -106,7 +106,7 @@ const initDatabase = async () => {
 
   const removeNotes = {
     habits:false,
-    tasks:true
+    tasks:false
 
   }
   if(removeNotes){
@@ -129,6 +129,13 @@ const initDatabase = async () => {
 
 
   }
+
+  await db.exec(`
+  UPDATE task 
+SET title = 'Plan water breaks(I get to do it)' 
+WHERE id = 429;
+
+`)
 
 
 

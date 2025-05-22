@@ -30,14 +30,14 @@ import Replay5Icon from '@mui/icons-material/Replay5';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { format } from "date-fns";
 import Timer from "./Timer";
-import { InternationaltimeZone, portUrl } from "../../AppConfiguration";
+import { InternationaltimeZone, portUrl, track } from "../../AppConfiguration";
 import WYSIWYGEditor from "./WYSIWYGEditor";
 import { searchFilters } from "./Search";
 
 // Interfaces
 export interface Task {
   id: number;
-  
+
   title: string;
   description: string;
   start_time: string;
@@ -50,7 +50,7 @@ export interface Task {
   five: boolean;
   notes: string | null;
   habitId: number;
-  date?:Date;
+  date?: Date;
 }
 
 // Add interfaces for type safety
@@ -267,12 +267,24 @@ const RegularRow = styled(TableRow)(({ theme }) => ({
 interface TasksTableProps {
   date?: string
   setBackDate?: React.Dispatch<React.SetStateAction<string>>
-  search?:searchFilters
+  search?: searchFilters
 
   // setSelectedCategory: (categoryId: number | null) => void;
 }
 
-export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search }) => {
+function convertMinutesToHours(minutes:number) {
+  const hours = Math.floor(minutes / 60); // Get the whole hours
+  const remainingMinutes = minutes % 60;   // Get the remaining minutes
+  return { hours, remainingMinutes };
+}
+
+// Example usage
+const totalMinutes = 125;
+const { hours, remainingMinutes } = convertMinutesToHours(totalMinutes);
+console.log(`${totalMinutes} minutes is equal to ${hours} hours and ${remainingMinutes} minutes.`); // Output: "125 minutes is equal to 2 hours and 5 minutes."
+
+
+export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, search }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -287,6 +299,8 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [notificationPermission, setNotificationPermission] =
     useState<NotificationPermission>("default");
+
+  const sound = new Audio('/sounds/brain-inplant.mp3');
 
   // Initialize audio and request notification permission
   useEffect(() => {
@@ -335,7 +349,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
                     audioRef.current.pause();
                     audioRef.current.currentTime = 0;
                   }
-                }, 2000);
+                }, 3000);
               })
               .catch((err) => console.error("Error playing sound:", err));
           }
@@ -350,6 +364,8 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
         }
       });
 
+  
+
       tasks.forEach((task) => {
         const [timeStr, modifier] = task.end_time.split(" ");
         let [hours, minutes] = timeStr.split(":").map(Number);
@@ -361,14 +377,14 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
         // Check if task is starting now
         if (hours === currentHour && minutes === currentMinute) {
           // Play sound
-          if (audioRef.current) {
-            audioRef.current.play()
+          if (sound) {
+            sound.play()
               .then(() => {
                 // Set a timeout to stop the audio after 2 seconds
                 setTimeout(() => {
-                  if (audioRef.current) {
-                    audioRef.current.pause();
-                    audioRef.current.currentTime = 0;
+                  if (sound) {
+                    sound.pause();
+                    sound.currentTime = 0;
                   }
                 }, 2000);
               })
@@ -400,36 +416,36 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
     try {
       setRefreshing(true);
       let response;
-      if(search){
-         response = await axios.post<Task[]>(
+      if (search) {
+        response = await axios.post<Task[]>(
           `${portUrl}/tasks/gettasks`, {
-          
+
           search: search
         }
         );
-      
-  
+
+
         setTasks(response.data);
         console.log('response123', response)
         setError(null);
-      }else{
-       response = await axios.post<Task[]>(
-        `${portUrl}/tasks/gettasks`, {
-        date: date ? date : null
+      } else {
+        response = await axios.post<Task[]>(
+          `${portUrl}/tasks/gettasks`, {
+          date: date ? date : null
+        }
+        );
+        const sortedTasks = response.data.sort((a, b) => {
+          const timeA = new Date(`2024-01-01 ${a.start_time}`).getTime();
+          const timeB = new Date(`2024-01-01 ${b.start_time}`).getTime();
+          return timeA - timeB;
+        });
+
+        setTasks(sortedTasks);
+        setError(null);
       }
-      );
-      const sortedTasks = response.data.sort((a, b) => {
-        const timeA = new Date(`2024-01-01 ${a.start_time}`).getTime();
-        const timeB = new Date(`2024-01-01 ${b.start_time}`).getTime();
-        return timeA - timeB;
-      });
-
-      setTasks(sortedTasks);
-      setError(null);
-    }
 
 
-     
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch tasks");
       console.error("Error fetching tasks:", err);
@@ -437,12 +453,12 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
       setLoading(false);
       setRefreshing(false);
     }
-  },  date ? [date] : [search],);
+  }, date ? [date] : [search],);
 
   // Initial fetch
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks,search]);
+  }, [fetchTasks, search]);
 
   // Auto-refresh setup
   const { nextRefresh, toggleRefresh, isActive } = useAutoRefresh(
@@ -690,26 +706,71 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
   // Helper function to clean content
   const cleanContent = (content: string): string => {
     try {
-        const parsed = JSON.parse(content);
-        
-        // Handle blockMap format
-        if (parsed.blockMap) {
-            return Object.values(parsed.blockMap)
-                .map((block: any) => block.text)
-                .join('\n');
-        }
-        
-        // Handle blocks format
-        if (parsed.blocks) {
-            return parsed.blocks.map((block: any) => block.text).join('\n');
-        }
+      const parsed = JSON.parse(content);
 
-        // If neither format is found, return the original content
-        return content;
+      // Handle blockMap format
+      if (parsed.blockMap) {
+        return Object.values(parsed.blockMap)
+          .map((block: any) => block.text)
+          .join('\n');
+      }
+
+      // Handle blocks format
+      if (parsed.blocks) {
+        return parsed.blocks.map((block: any) => block.text).join('\n');
+      }
+
+      // If neither format is found, return the original content
+      return content;
     } catch (e) {
-        return content;
+      return content;
     }
-};
+  };
+
+  function minutesBetweenTimes(start: string, end: string): number {
+    // Define the time format
+    const timeFormat = "hh:mm A"; // 12-hour format with AM/PM
+
+    // Function to parse time string into Date object
+    const parseTime = (timeStr: string): Date => {
+      const [time, modifier] = timeStr.split(" ");
+      const [hours, minutes] = time.split(":").map(Number);
+      const date = new Date();
+
+      // Set hours and minutes accordingly
+      let adjustedHours = hours % 12; // Convert 12 PM/AM to 0
+      if (modifier === "PM") {
+        adjustedHours += 12; // Convert PM to 24-hour format
+      }
+      date.setHours(adjustedHours, minutes, 0, 0); // Set hours, minutes, seconds, milliseconds
+      return date;
+    };
+
+    // Parse the start and end times
+    const startTime = parseTime(start);
+    const endTime = parseTime(end);
+
+    // Calculate the difference in milliseconds and convert to minutes
+    const difference = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // Convert milliseconds to minutes
+    return difference;
+  }
+
+
+
+
+  // Calculate total minutes spent on LeetCode tasks
+  const calculateMinutes = (taskName: string) => {
+    return tasks.reduce((total, task) => {
+      if (task.title.toLowerCase().includes(taskName) && task.completed) {
+        const duration = minutesBetweenTimes(task.start_time, task.end_time)
+        return total + duration;
+      }
+      return total;
+    }, 0);
+  };
+
+  // Calculate the total minutes for LeetCode tasks
+
 
 
 
@@ -834,11 +895,11 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
         <Table stickyHeader sx={{ minWidth: 650 }} aria-label="tasks table">
           <StyledTableHead>
             <TableRow>
-              {search &&   <StyledTableCell>Date</StyledTableCell>}
+              {search && <StyledTableCell>Date</StyledTableCell>}
               <StyledTableCell>Start Time</StyledTableCell>
               <StyledTableCell>End Time</StyledTableCell>
               <StyledTableCell>Task</StyledTableCell>
-              <StyledTableCell>Description</StyledTableCell>
+              <StyledTableCell>Description ||Dedicated to</StyledTableCell>
               <StyledTableCell>Yes</StyledTableCell>
               <StyledTableCell>No</StyledTableCell>
               <StyledTableCell>Time</StyledTableCell>
@@ -916,7 +977,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
                     placement="top"
                   >
                     <RowComponent >
-                    {search &&  task.date && <StyledTableCell><>{task.date}</></StyledTableCell>}
+                      {search && task.date && <StyledTableCell><>{task.date}</></StyledTableCell>}
                       <StyledTableCell>
                         {(() => {
                           // Get current time in EST
@@ -959,7 +1020,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
                       <StyledTableCell> {renderDescription(task.description)}</StyledTableCell>
                       <StyledTableCell >
                         <Checkbox
-                        disabled={search ? true:false}
+                          disabled={search ? true : false}
                           checked={task.completed}
                           onChange={() =>
                             handleTaskCompletion(task, task.completed, task.title.toLowerCase().includes("i get to do it"))
@@ -969,7 +1030,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
                       </StyledTableCell>
                       <StyledTableCell >
                         <Checkbox
-                          disabled={search ? true:false}
+                          disabled={search ? true : false}
                           checked={task.not_completed}
                           onChange={() =>
                             handleTaskNonCompletion(task, task.not_completed, task.title.toLowerCase().includes("i get to do it"))
@@ -980,7 +1041,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
                       </StyledTableCell>
                       <StyledTableCell >
                         <Checkbox
-                          disabled={search ? true:false}
+                          disabled={search ? true : false}
                           checked={task.reassign}
                           onChange={() =>
                             handleTaskReassign(task, task.reassign)
@@ -1016,7 +1077,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
                       </StyledTableCell>
                       <StyledTableCell>
                         <Checkbox
-                          disabled={search ? true:false}
+                          disabled={search ? true : false}
                           checked={task.five}
                           onChange={() =>
                             handle5minCompletion(task, task.five, task.title.toLowerCase().includes("i get to do it"))
@@ -1028,7 +1089,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
                       <StyledTableCell>
                         {!Routine && <DeleteForeverIcon
                           onClick={() => handleDeleteForeverTask(task.id)}
-                          
+
                           sx={{
                             color: 'red',
                             cursor: 'pointer',
@@ -1077,7 +1138,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
                             {cleanContent(task.notes)}
                           </Typography>
                         )}
-                        {openWYS === task.id && <WYSIWYGEditor key={task.id} taskId={task.id} notes={task.notes} habit={Routine} date={date} Task={task}  setTasks={setTasks} open={openWYS ? true : false} onClose={() => setOpenWYS(null) }
+                        {openWYS === task.id && <WYSIWYGEditor key={task.id} taskId={task.id} notes={task.notes} habit={Routine} date={date} Task={task} setTasks={setTasks} open={openWYS ? true : false} onClose={() => setOpenWYS(null)}
 
                         />}</StyledTableCell>
                     </RowComponent>
@@ -1088,6 +1149,49 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate,search
 
         </Table>
       </TableContainer>
+{/* tracking*/}
+      {<>{track.map((task)=>{
+        const totalMinutes = calculateMinutes(task);
+        const { hours, remainingMinutes } = convertMinutesToHours(totalMinutes);
+        
+        {return(
+        <Box
+        key={task}
+        sx={{
+          padding: 2,
+          border: '1px solid #ccc',
+          borderRadius: 1,
+          backgroundColor: '#f9f9f9',
+          display: 'flex',
+          alignItems: 'center'
+        }}
+      >
+        <Typography
+          variant="h6"
+          component="span"
+          color="text.primary"
+          fontWeight="bold"
+        >
+          Total {task} Minutes:
+        </Typography>
+        <Typography
+          variant="h6"
+          component="span"
+          color="primary"
+          sx={{ marginLeft: 1 }}
+        >
+          {`${totalMinutes} minutes = ${hours} hours and ${remainingMinutes} minutes`}
+        </Typography>
+      </Box>)}})}
+
+    
+      
+      </>}
+
+
+
+
+
 
 
 

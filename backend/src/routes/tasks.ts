@@ -424,10 +424,13 @@ router.post('/gettasks', async (req: Request, res: Response) => {
             }
             console.log('429',tasks.length)
 
-            if(search.date){
-                tasks = tasks.filter((row)=>row.date === search.date);
-
+            if (search.startDate && search.endDate) {
+                tasks = tasks.filter((row) => {
+                    const taskDate = new Date(row.date);
+                    return taskDate >= new Date(search.startDate) && taskDate <= new Date(search.endDate);
+                });
             }
+    
             if(search.page && search.limit){
                 const startIndex = (search.page - 1) * search.limit;
                 const endIndex = startIndex + search.limit;

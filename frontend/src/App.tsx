@@ -8,6 +8,8 @@ import Entry from "./Pages/Entry";
 import Dashboard from "./Pages/Dashboard";
 import PointsMetric from "./Pages/PointsMetric";
 import { Search } from "./Pages/Common/Search";
+import CounterApp from "./counter";
+import SoundTrigger from "./SoundTrigger";
 
 const App: React.FC = () => {
   const [value, setValue] = React.useState("1");
@@ -21,6 +23,7 @@ const App: React.FC = () => {
   };
 
   return (
+  
   
       <Box sx={{ width: "100%", typography: "body1" }}>
         <TabContext value={value}>
@@ -45,7 +48,11 @@ const App: React.FC = () => {
             <Search />
           </TabPanel>
         </TabContext>
+        <SoundTrigger/>
+     
+        
       </Box>
+    
 
   );
 };
