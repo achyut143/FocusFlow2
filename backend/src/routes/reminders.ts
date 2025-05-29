@@ -133,7 +133,7 @@ router.get('/reminders/range/:startDate/:endDate', async (req: Request, res: Res
 });
 
 // Toggle reminder completion status
-router.patch('/reminders/:id/toggle', async (req: Request, res: Response) => {
+router.put('/reminders/:id/toggle', async (req: Request, res: Response) => {
     try {
         const db = await openDb();
         const result = await db.run(`

@@ -77,6 +77,7 @@ const useAutoRefresh = (callback: () => void, minutes: number) => {
   const [nextRefresh, setNextRefresh] = useState(minutes * 60);
   const [isActive, setIsActive] = useState(true);
 
+
   useState<NotificationPermission>("default");
 
   useEffect(() => {

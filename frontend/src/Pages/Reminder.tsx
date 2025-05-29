@@ -262,7 +262,7 @@ const Reminder: React.FC = () => {
     const toggleComplete = async (reminder: Reminder) => {
         try {
             // Toggle the current reminder's completion status
-            await axios.patch(`${API_BASE_URL}/reminders/${reminder.id}/toggle`);
+            await axios.put(`${API_BASE_URL}/reminders/${reminder.id}/toggle`);
 
             // Handle recurring reminders
             if (reminder.repeat !== 'none' && !reminder.completed) {
