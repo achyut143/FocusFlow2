@@ -70,7 +70,10 @@ interface RawDraftContent {
 }
 
 
-const NOTIFICATION_SOUND = "/sounds/notification.mp3";
+// Text-to-speech configuration
+const TEXT_TO_SPEECH_RATE = 1; // Normal speech rate
+const TEXT_TO_SPEECH_PITCH = 1; // Normal pitch
+const TEXT_TO_SPEECH_VOLUME = 1; // Full volume
 
 // Custom hook for auto-refresh
 const useAutoRefresh = (callback: () => void, minutes: number) => {
@@ -273,7 +276,7 @@ interface TasksTableProps {
   // setSelectedCategory: (categoryId: number | null) => void;
 }
 
-function convertMinutesToHours(minutes:number) {
+function convertMinutesToHours(minutes: number) {
   const hours = Math.floor(minutes / 60); // Get the whole hours
   const remainingMinutes = minutes % 60;   // Get the remaining minutes
   return { hours, remainingMinutes };
@@ -297,17 +300,21 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
   const [editedTitle, setEditedTitle] = useState<string>("");
 
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // No longer need audioRef as we're using text-to-speech
   const [notificationPermission, setNotificationPermission] =
     useState<NotificationPermission>("default");
 
-  const sound = new Audio('/sounds/brain-inplant.mp3');
+  // Text-to-speech function
+  const speakText = (text: string) => {
+    const speech = new SpeechSynthesisUtterance(text);
+    speech.rate = TEXT_TO_SPEECH_RATE;
+    speech.pitch = TEXT_TO_SPEECH_PITCH;
+    speech.volume = TEXT_TO_SPEECH_VOLUME;
+    window.speechSynthesis.speak(speech);
+  };
 
-  // Initialize audio and request notification permission
+  // Initialize and request notification permission
   useEffect(() => {
-    // Initialize audio
-    audioRef.current = new Audio(NOTIFICATION_SOUND);
-
     // Request notification permission
     const requestNotificationPermission = async () => {
       try {
@@ -340,20 +347,8 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
 
         // Check if task is starting now
         if (hours === currentHour && minutes === currentMinute) {
-          // Play sound
-          if (audioRef.current) {
-            audioRef.current.play()
-              .then(() => {
-                // Set a timeout to stop the audio after 2 seconds
-                setTimeout(() => {
-                  if (audioRef.current) {
-                    audioRef.current.pause();
-                    audioRef.current.currentTime = 0;
-                  }
-                }, 3000);
-              })
-              .catch((err) => console.error("Error playing sound:", err));
-          }
+          // Use the speakText function for text-to-speech
+          speakText(`Time to start: ${task.title}`);
 
           // Show notification
           if (notificationPermission === "granted") {
@@ -365,7 +360,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
         }
       });
 
-  
+
 
       tasks.forEach((task) => {
         const [timeStr, modifier] = task.end_time.split(" ");
@@ -375,27 +370,15 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
         if (modifier === "PM" && hours < 12) hours += 12;
         if (modifier === "AM" && hours === 12) hours = 0;
 
-        // Check if task is starting now
+        // Check if task is ending now
         if (hours === currentHour && minutes === currentMinute) {
-          // Play sound
-          if (sound) {
-            sound.play()
-              .then(() => {
-                // Set a timeout to stop the audio after 2 seconds
-                setTimeout(() => {
-                  if (sound) {
-                    sound.pause();
-                    sound.currentTime = 0;
-                  }
-                }, 2000);
-              })
-              .catch((err) => console.error("Error playing sound:", err));
-          }
+          // Use the speakText function for text-to-speech
+          speakText(`Time to end: ${task.title}`);
 
           // Show notification
           if (notificationPermission === "granted") {
-            new Notification("Task Starting", {
-              body: `Time to start: ${task.title}`,
+            new Notification("Task Ending", {
+              body: `Time to end: ${task.title}`,
               icon: "/task-icon.png", // Add an icon to your public folder
             });
           }
@@ -490,7 +473,10 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
 
       }
 
-
+      // Provide audio feedback using text-to-speech
+      if (!completed) {
+        speakText(`Task completed: ${Task.title}`);
+      }
 
       // Update local state
       setTasks((prevTasks) =>
@@ -517,7 +503,10 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
 
       }
 
-
+      // Provide audio feedback using text-to-speech
+      if (!not_completed) {
+        speakText(`Task marked as not completed: ${Task.title}`);
+      }
 
       // Update local state
       setTasks((prevTasks) =>
@@ -544,7 +533,10 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
 
       }
 
-
+      // Provide audio feedback using text-to-speech
+      if (!five) {
+        speakText(`5-minute rule applied to: ${Task.title}`);
+      }
 
       // Update local state
       setTasks((prevTasks) =>
@@ -1150,43 +1142,46 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
 
         </Table>
       </TableContainer>
-{/* tracking*/}
-      {<>{track.map((task)=>{
+      {/* tracking*/}
+      {<>{track.map((task) => {
         const totalMinutes = calculateMinutes(task);
         const { hours, remainingMinutes } = convertMinutesToHours(totalMinutes);
-        
-        {return(
-        <Box
-        key={task}
-        sx={{
-          padding: 2,
-          border: '1px solid #ccc',
-          borderRadius: 1,
-          backgroundColor: '#f9f9f9',
-          display: 'flex',
-          alignItems: 'center'
-        }}
-      >
-        <Typography
-          variant="h6"
-          component="span"
-          color="text.primary"
-          fontWeight="bold"
-        >
-          Total {task} Minutes:
-        </Typography>
-        <Typography
-          variant="h6"
-          component="span"
-          color="primary"
-          sx={{ marginLeft: 1 }}
-        >
-          {`${totalMinutes} minutes = ${hours} hours and ${remainingMinutes} minutes`}
-        </Typography>
-      </Box>)}})}
 
-    
-      
+        {
+          return (
+            <Box
+              key={task}
+              sx={{
+                padding: 2,
+                border: '1px solid #ccc',
+                borderRadius: 1,
+                backgroundColor: '#f9f9f9',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              <Typography
+                variant="h6"
+                component="span"
+                color="text.primary"
+                fontWeight="bold"
+              >
+                Total {task} Minutes:
+              </Typography>
+              <Typography
+                variant="h6"
+                component="span"
+                color="primary"
+                sx={{ marginLeft: 1 }}
+              >
+                {`${totalMinutes} minutes = ${hours} hours and ${remainingMinutes} minutes`}
+              </Typography>
+            </Box>)
+        }
+      })}
+
+
+
       </>}
 
 

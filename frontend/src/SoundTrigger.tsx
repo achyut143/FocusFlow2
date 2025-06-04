@@ -3,25 +3,27 @@ import React, { useEffect, useState } from 'react';
 const SoundTrigger: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false); // State to track if sound should play
   const [intervalMinutes, setIntervalMinutes] = useState<number>(5); // State for interval in minutes
-  const [counter , setCounter] = useState(0)
-  const [StartTime,setStartTime] = useState('')
-  const sound = new Audio('/sounds/gardens.mp3'); // Replace with your sound file path
+  const [counter, setCounter] = useState(0)
+  const [StartTime, setStartTime] = useState('')
 
   useEffect(() => {
-    // Function to play the sound
+    // Function to play speech sound
     const playSound = () => {
-      sound.play().then(() => {
-        setCounter(counter + 1)
-        // Set a timeout to stop the audio after 2 seconds
-        setTimeout(() => {
-          if (sound) {
-            sound.pause();
-            sound.currentTime = 0;
-          }
-        }, 2000);
-      })
-      .catch((err) => console.error("Error playing sound:", err));
-     
+      // Increment counter first
+      const newCounter = counter + 1;
+      setCounter(newCounter);
+      
+      // Create speech synthesis message
+      const message = `Interval Number ${newCounter} ended for ${intervalMinutes} minutes`;
+      
+      // Use speech synthesis API
+      const speech = new SpeechSynthesisUtterance(message);
+      speech.rate = 1; // Normal speech rate
+      speech.pitch = 1; // Normal pitch
+      speech.volume = 1; // Full volume
+      
+      // Play the speech
+      window.speechSynthesis.speak(speech);
     };
 
     // Set an interval to play the sound based on the specified minutes if isPlaying is true
@@ -37,13 +39,13 @@ const SoundTrigger: React.FC = () => {
         clearInterval(intervalId);
       }
     };
-  }, [isPlaying, intervalMinutes, sound]);
+  }, [isPlaying, intervalMinutes, counter]);
 
   return (
     <div style={{ textAlign: 'center', marginTop: '50px' }}>
-      <h1>Sound Trigger</h1>
+      <h1>Voice Alert</h1>
       <h3>Interval Number {counter}</h3>
-      <p>A sound will play every {isPlaying ? intervalMinutes : 0} minutes when enabled.</p>
+      <p>A voice announcement will be made every {isPlaying ? intervalMinutes : 0} minutes when enabled.</p>
       <p>{isPlaying && StartTime}</p>
       
       <label>
