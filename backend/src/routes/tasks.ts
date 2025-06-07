@@ -92,7 +92,7 @@ router.post('/remindersToTasks', async (req, res) => {
 });
 
 router.post('/tasks', async (req, res) => {
-    const { title, description, start_time, end_time, completed, category_id, weight } = req.body;
+    const { title, description, start_time, end_time, completed, category_id, weight, date } = req.body;
     const db = await openDb();
 
     try {
@@ -103,7 +103,7 @@ router.post('/tasks', async (req, res) => {
             // Set date to last year's date
             const lastYear = new Date();
             lastYear.setFullYear(lastYear.getFullYear() - 1);
-            dateValue = lastYear.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+            dateValue = date//lastYear.toISOString().split('T')[0]; // Format: YYYY-MM-DD
             const result = await db.run(`
                 INSERT INTO task (title, description, start_time, end_time, completed, category_id, date, weight) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -115,8 +115,8 @@ router.post('/tasks', async (req, res) => {
             // Use current date
             const result = await db.run(`
                 INSERT INTO task (title, description, start_time, end_time, completed, category_id, date, weight) 
-                VALUES (?, ?, ?, ?, ?, ?, DATE(DATETIME('now', 'localtime')), ?)`,
-                [title, description, start_time, end_time, completed, category_id, weight]
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [title, description, start_time, end_time, completed, category_id, date,weight]
             );
             await db.close();
             res.status(201).json({ id: result.lastID });;
@@ -327,102 +327,102 @@ router.post('/notes', async (req: Request, res: Response) => {
 
 // Read all tasks
 router.post('/gettasks', async (req: Request, res: Response) => {
-    const { date,search } = req.body;
+    const { date, search } = req.body;
     try {
         const db = await openDb();
         let tasks: any[] = [];
         let habitTasks = [];
-        if(search){
+        if (search) {
 
             // if(search.text){
-             tasks = await db.all(`
+            tasks = await db.all(`
                 SELECT * FROM task 
                 WHERE title LIKE ? 
               
             `, [`%${search.text}%`]);
 
-             habitTasks = await db.all(`
+            habitTasks = await db.all(`
                 SELECT * FROM habit 
                WHERE taskName LIKE ?
             `, [`%${search.text}%`]);
-            
+
 
             const habitTaskNames = habitTasks.map(habit =>
                 habit.taskName.toLowerCase()
             );
 
-         
+
             habitTasks = habitTasks.map((habit) => {
                 // Find the task that has the same name as the habit
                 const matchingTask = tasks.find((task) => task.title === habit.taskName);
-            
+
                 // If a matching task is found, return a new object without the date property
                 if (matchingTask) {
-                
-                    return {...matchingTask,date:habit.date,weight:habit.weight,completed:habit.done,not_completed:habit.procrastinated,notes:habit.notes} // Return the task object without the date
+
+                    return { ...matchingTask, date: habit.date, weight: habit.weight, completed: habit.done, not_completed: habit.procrastinated, notes: habit.notes } // Return the task object without the date
                 }
-            
+
                 // If no matching task is found, return the habit as is or handle as needed
                 return null;
             });
 
             habitTasks = habitTasks.filter((habit) => habit !== null)
 
-            tasks = tasks.filter((task)=>!task.title.includes('I get to do it'))
+            tasks = tasks.filter((task) => !task.title.includes('I get to do it'))
 
-            tasks = [...tasks,...habitTasks]
+            tasks = [...tasks, ...habitTasks]
 
-            
 
-          console.log('377',tasks.length)
-             tasks = tasks?.sort((a, b) => {
+
+            console.log('377', tasks.length)
+            tasks = tasks?.sort((a, b) => {
                 // Convert start times to 24-hour format for comparison
                 const getTimeValue = (timeStr: string) => {
                     const [time, period] = timeStr.split(' ');
                     let [hours, minutes] = time.split(':').map(Number);
-            
+
                     // Convert to 24-hour format
                     if (period === 'PM' && hours !== 12) {
                         hours += 12;
                     } else if (period === 'AM' && hours === 12) {
                         hours = 0;
                     }
-            
+
                     return hours * 60 + minutes; // Convert to minutes for easier comparison
                 };
-            
+
                 // Compare dates
                 const dateA = new Date(a.date); // Assuming 'date' is the property name for date
                 const dateB = new Date(b.date);
-            
+
                 if (dateA.getTime() !== dateB.getTime()) {
                     return dateA.getTime() - dateB.getTime(); // Sort by date
                 }
-            
+
                 // If dates are equal, compare start times
                 const startTimeA = getTimeValue(a.start_time);
                 const startTimeB = getTimeValue(b.start_time);
-            
+
                 if (startTimeA !== startTimeB) {
                     return startTimeA - startTimeB; // Sort by start time
                 }
-            
+
                 // If start times are equal, compare end times
                 const endTimeA = getTimeValue(a.end_time);
                 const endTimeB = getTimeValue(b.end_time);
                 return endTimeA - endTimeB; // Sort by end time
             });
             await db.close();
-            console.log('416',tasks.length)
+            console.log('416', tasks.length)
 
-         
 
-            console.log('424',tasks.length)
-            if(search.notes){
-                tasks = tasks.filter((row)=>row.notes !== null);   
+
+            console.log('424', tasks.length)
+            if (search.notes) {
+                tasks = tasks.filter((row) => row.notes !== null);
 
             }
-            console.log('429',tasks.length)
+            console.log('429', tasks.length)
 
             if (search.startDate && search.endDate) {
                 tasks = tasks.filter((row) => {
@@ -430,151 +430,151 @@ router.post('/gettasks', async (req: Request, res: Response) => {
                     return taskDate >= new Date(search.startDate) && taskDate <= new Date(search.endDate);
                 });
             }
-    
-            if(search.page && search.limit){
+
+            if (search.page && search.limit) {
                 const startIndex = (search.page - 1) * search.limit;
                 const endIndex = startIndex + search.limit;
-                tasks = tasks.slice(startIndex, endIndex);         
+                tasks = tasks.slice(startIndex, endIndex);
             }
-            console.log('433',tasks.length)
-        // }
+            console.log('433', tasks.length)
+            // }
             res.json(tasks);
-       
 
-            
 
-           
 
-           
-        
 
-        }else{
-        if (date) {
-            tasks = await db.all(`
+
+
+
+
+
+        } else {
+            if (date) {
+                tasks = await db.all(`
                 SELECT * FROM task 
                 WHERE (date = ? OR 
                       LOWER(title) LIKE '%i get to do it%' COLLATE NOCASE)
             `, [date]);
 
-            const habitTasks = await db.all(`
+                const habitTasks = await db.all(`
                 SELECT * FROM habit 
                 WHERE date = ?
             `, [date]);
 
-            const habitTaskNames = habitTasks.map(habit =>
-                habit.taskName.toLowerCase()
-            );
-
-            console.log('habitTaskNames', habitTaskNames)
-            tasks = tasks.map(task => {
-                const taskTitle = task.title.toLowerCase();
-                // Check if any habit task name is included in the task title
-                const matchesHabitComplete = habitTasks.some(habitName =>
-                    taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.done 
+                const habitTaskNames = habitTasks.map(habit =>
+                    habit.taskName.toLowerCase()
                 );
 
-                const matchesHabitInComplete = habitTasks.some(habitName =>
-                    taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.procrastinated
-                );
+                console.log('habitTaskNames', habitTaskNames)
+                tasks = tasks.map(task => {
+                    const taskTitle = task.title.toLowerCase();
+                    // Check if any habit task name is included in the task title
+                    const matchesHabitComplete = habitTasks.some(habitName =>
+                        taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.done
+                    );
 
-                const habit = habitTasks.filter(habitName =>
-                    taskTitle.includes(habitName.taskName.toLowerCase()))[0]
-              
+                    const matchesHabitInComplete = habitTasks.some(habitName =>
+                        taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.procrastinated
+                    );
 
-                if(habit === undefined){
-
-                return matchesHabitComplete ? { ...task, completed: true,not_completed:false} : matchesHabitInComplete ? { ...task, not_completed: true,completed:false } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : {...task};
-                }else{
-
-                return matchesHabitComplete ? { ...task, completed: true,not_completed:false, notes: habit.notes, habitId: habit.id } : matchesHabitInComplete ? { ...task, not_completed: true, notes: habit.notes, habitId: habit.id,completed:false } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false, notes: habit.notes, habitId: habit.id } : {...task, habitId:null};
-                }
-            });
+                    const habit = habitTasks.filter(habitName =>
+                        taskTitle.includes(habitName.taskName.toLowerCase()))[0]
 
 
+                    if (habit === undefined) {
 
-        } else {
-            tasks = await db.all(`
+                        return matchesHabitComplete ? { ...task, completed: true, not_completed: false } : matchesHabitInComplete ? { ...task, not_completed: true, completed: false } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : { ...task };
+                    } else {
+
+                        return matchesHabitComplete ? { ...task, completed: true, not_completed: false, notes: habit.notes, habitId: habit.id } : matchesHabitInComplete ? { ...task, not_completed: true, notes: habit.notes, habitId: habit.id, completed: false } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false, notes: habit.notes, habitId: habit.id } : { ...task, habitId: null };
+                    }
+                });
+
+
+
+            } else {
+                tasks = await db.all(`
                 SELECT * FROM task 
                 WHERE (date = DATE(DATETIME('now', 'localtime')) OR 
                       LOWER(title) LIKE '%i get to do it%' COLLATE NOCASE)
                 AND deletedAt IS NULL
             `);
 
-            const habitTasks = await db.all(`
+                const habitTasks = await db.all(`
                 SELECT * FROM habit 
                 WHERE date =  DATE(DATETIME('now', 'localtime'))
             `);
 
-            const habitTaskNames = habitTasks.map(habit =>
-                habit.taskName.toLowerCase()
-            );
-
-
-            tasks = tasks.map(task => {
-                const taskTitle = task.title.toLowerCase();
-                // Check if any habit task name is included in the task title
-                const matchesHabitComplete = habitTasks.some(habitName =>
-                    taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.done
+                const habitTaskNames = habitTasks.map(habit =>
+                    habit.taskName.toLowerCase()
                 );
 
-                const matchesHabitInComplete = habitTasks.some(habitName =>
-                    taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.procrastinated
-                );
 
-                const habit = habitTasks.filter(habitName =>
-                    taskTitle.includes(habitName.taskName.toLowerCase()))[0]
-              
+                tasks = tasks.map(task => {
+                    const taskTitle = task.title.toLowerCase();
+                    // Check if any habit task name is included in the task title
+                    const matchesHabitComplete = habitTasks.some(habitName =>
+                        taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.done
+                    );
 
-                if(habit === undefined){
+                    const matchesHabitInComplete = habitTasks.some(habitName =>
+                        taskTitle.includes(habitName.taskName.toLowerCase()) && habitName.procrastinated
+                    );
 
-                return matchesHabitComplete ? { ...task, completed: true,not_completed:false} : matchesHabitInComplete ? { ...task, not_completed: true,completed:false } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : {...task};
-                }else{
+                    const habit = habitTasks.filter(habitName =>
+                        taskTitle.includes(habitName.taskName.toLowerCase()))[0]
 
-                return matchesHabitComplete ? { ...task, completed: true,not_completed:false, notes: habit.notes, habitId: habit.id } : matchesHabitInComplete ? { ...task, not_completed: true, notes: habit.notes, habitId: habit.id ,completed:false} : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false, notes: habit.notes, habitId: habit.id } : {...task, habitId:null};
-                }
-            });
 
-        }
+                    if (habit === undefined) {
 
-        const sortedTasks = tasks?.sort((a, b) => {
-            // Convert start times to 24-hour format for comparison
-            const getTimeValue = (timeStr: string) => {
-                const [time, period] = timeStr.split(' ');
-                let [hours, minutes] = time.split(':').map(Number);
+                        return matchesHabitComplete ? { ...task, completed: true, not_completed: false } : matchesHabitInComplete ? { ...task, not_completed: true, completed: false } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false } : { ...task };
+                    } else {
 
-                // Convert to 24-hour format
-                if (period === 'PM' && hours !== 12) {
-                    hours += 12;
-                } else if (period === 'AM' && hours === 12) {
-                    hours = 0;
-                }
+                        return matchesHabitComplete ? { ...task, completed: true, not_completed: false, notes: habit.notes, habitId: habit.id } : matchesHabitInComplete ? { ...task, not_completed: true, notes: habit.notes, habitId: habit.id, completed: false } : task.title.toLowerCase().includes("i get to do it") ? { ...task, completed: false, not_completed: false, notes: habit.notes, habitId: habit.id } : { ...task, habitId: null };
+                    }
+                });
 
-                return hours * 60 + minutes; // Convert to minutes for easier comparison
-            };
-
-            // Compare start times
-            const startTimeA = getTimeValue(a.start_time);
-            const startTimeB = getTimeValue(b.start_time);
-
-            if (startTimeA !== startTimeB) {
-                return startTimeA - startTimeB;
             }
 
-            // If start times are equal, compare end times
-            const endTimeA = getTimeValue(a.end_time);
-            const endTimeB = getTimeValue(b.end_time);
-            return endTimeA - endTimeB;
-        });
-        await db.close();
-        res.json(sortedTasks);
-    }
+            const sortedTasks = tasks?.sort((a, b) => {
+                // Convert start times to 24-hour format for comparison
+                const getTimeValue = (timeStr: string) => {
+                    const [time, period] = timeStr.split(' ');
+                    let [hours, minutes] = time.split(':').map(Number);
+
+                    // Convert to 24-hour format
+                    if (period === 'PM' && hours !== 12) {
+                        hours += 12;
+                    } else if (period === 'AM' && hours === 12) {
+                        hours = 0;
+                    }
+
+                    return hours * 60 + minutes; // Convert to minutes for easier comparison
+                };
+
+                // Compare start times
+                const startTimeA = getTimeValue(a.start_time);
+                const startTimeB = getTimeValue(b.start_time);
+
+                if (startTimeA !== startTimeB) {
+                    return startTimeA - startTimeB;
+                }
+
+                // If start times are equal, compare end times
+                const endTimeA = getTimeValue(a.end_time);
+                const endTimeB = getTimeValue(b.end_time);
+                return endTimeA - endTimeB;
+            });
+            await db.close();
+            res.json(sortedTasks);
+        }
 
         // Sort tasks by time
-      
-      
-    
 
-       
+
+
+
+
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch tasks' });
     }
@@ -595,6 +595,13 @@ router.get('/tasks/:id', async (req, res) => {
 
 
 router.get('/graph', async (req, res) => {
+    const days = req.query.days ? parseInt(req.query.days as string) : 30; // Default to 30 days if not specified
+
+    // Calculate the date for filtering
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    const filterDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+
     const db = await openDb();
     const task = await db.all(`SELECT 
     taskName,
@@ -603,13 +610,11 @@ router.get('/graph', async (req, res) => {
     SUM(CASE WHEN done = 1 THEN 1 ELSE 0 END) AS completed_tasks,
     SUM(CASE WHEN procrastinated = 1 THEN 1 ELSE 0 END) AS not_completed_tasks
 FROM habit
+WHERE date >= ?
 GROUP BY 
-    taskName,date;
+    taskName, date`, [filterDate]);
 
-
-
-`);
-    console.log(task)
+    console.log(task);
     await db.close();
     if (task) {
         res.json(task);

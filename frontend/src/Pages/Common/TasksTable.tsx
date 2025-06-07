@@ -18,7 +18,13 @@ import {
   TextField,
   Button,
   Typography,
+  Card,
+  CardHeader,
+  CardContent,
+  Divider,
+  Chip,
 } from "@mui/material";
+import "./TasksTable.css";
 import { styled } from "@mui/material/styles";
 import axios from "axios";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -294,6 +300,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
+  const [hideRoutine, setHideRoutine] = useState(false);
 
   //Edit Task
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -833,30 +840,27 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
   }
 
   return (
-    <Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 2,
-        }}
-      >
-        <FormControlLabel
-          control={
-            <Switch
-              checked={isActive}
-              onChange={toggleRefresh}
+    <div className="tasks-table-container">
+      <div className="table-header">
+        <Typography variant="h6" className="table-title">
+          {date ? `Tasks for ${date}` : 'Current Tasks'}
+        </Typography>
+        <div className="table-controls">
+          {date && (
+            <Button
+              variant="outlined"
               color="primary"
-            />
-          }
-          label="Auto-refresh"
-        />
-        <Box sx={{ display: "flex", alignItems: "center" }}>
+              onClick={() => setBackDate && setBackDate('')}
+              size="small"
+            >
+              Back to Current
+            </Button>
+          )}
           <Tooltip title="Refresh tasks">
             <IconButton
               onClick={fetchTasks}
               disabled={refreshing}
+              size="small"
               sx={{
                 animation: refreshing ? "spin 1s linear infinite" : "none",
                 "@keyframes spin": {
@@ -868,21 +872,48 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
               <RefreshIcon />
             </IconButton>
           </Tooltip>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
-      {date && <Button variant="contained"
-        color="primary" onClick={() => setBackDate && setBackDate('')}>({date}) - Close</Button>}
+      <div className="table-filters">
+        <div className="filter-group">
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isActive}
+                onChange={toggleRefresh}
+                color="primary"
+                size="small"
+              />
+            }
+            label="Auto-refresh"
+          />
+        </div>
+        <div className="filter-group">
+          <FormControlLabel
+            control={
+              <Switch
+                checked={hideRoutine}
+                onChange={() => setHideRoutine(!hideRoutine)}
+                color="secondary"
+                size="small"
+              />
+            }
+            label="Hide 'I get to do it'"
+          />
+        </div>
+      </div>
+
+      {isActive && (
+        <div className="refresh-info">
+          <span>Last updated: {currentTime.toLocaleTimeString()}</span>
+          <span>Next refresh in: {Math.floor(nextRefresh / 60)}:{(nextRefresh % 60).toString().padStart(2, "0")}</span>
+        </div>
+      )}
 
       <TableContainer
+        className="table-container"
         component={Paper}
-
-        sx={{
-          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-          borderRadius: 2,
-          backgroundColor: "#F8FAFC",
-          maxHeight: 800
-        }}
       >
 
         <Table stickyHeader sx={{ minWidth: 650 }} aria-label="tasks table">
@@ -905,7 +936,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
 
 
           <TableBody>
-            {tasks.map((task) => {
+            {tasks.filter(task => !hideRoutine || !task.title.toLowerCase().includes("i get to do it")).map((task) => {
               const isCurrentTime = isCurrentTimeSlot(
                 task.start_time,
                 task.end_time
@@ -1013,7 +1044,6 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
                       <StyledTableCell> {renderDescription(task.description)}</StyledTableCell>
                       <StyledTableCell >
                         <Checkbox
-                          disabled={search ? true : false}
                           checked={task.completed}
                           onChange={() =>
                             handleTaskCompletion(task, task.completed, task.title.toLowerCase().includes("i get to do it"))
@@ -1209,6 +1239,6 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
           </Box>
         )}
       </Box>
-    </Box>
+    </div>
   );
 }

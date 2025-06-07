@@ -1,0 +1,149 @@
+.tasks-table-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.table-title {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #3f51b5;
+  margin: 0;
+}
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.table-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 24px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refresh-info {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 24px;
+  background-color: #e8eaf6;
+  color: #3f51b5;
+  font-size: 0.875rem;
+}
+
+.table-container {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.MuiTableCell-head {
+  background-color: #e8eaf6 !important;
+  color: #3f51b5 !important;
+  font-weight: 600 !important;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.MuiTableRow-root:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+.task-title {
+  font-weight: 500;
+  color: #212121;
+}
+
+.task-description {
+  color: #616161;
+  font-size: 0.875rem;
+}
+
+.task-time {
+  font-family: monospace;
+  font-weight: 500;
+}
+
+.task-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.task-status-indicator {
+  width: 8px;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.task-notes-preview {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+  color: #757575;
+}
+
+.task-weight {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: #e0e0e0;
+  color: #616161;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Animation for highlighted rows */
+@keyframes highlight-pulse {
+  0% {
+    background-color: rgba(63, 81, 181, 0.1);
+  }
+  50% {
+    background-color: rgba(63, 81, 181, 0.2);
+  }
+  100% {
+    background-color: rgba(63, 81, 181, 0.1);
+  }
+}
+
+.highlighted-row {
+  animation: highlight-pulse 2s infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .table-header, .table-filters {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .table-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

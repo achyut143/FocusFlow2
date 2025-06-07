@@ -1,23 +1,39 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import Button from "@mui/material/Button";
-import { Box, FormControl, MenuItem, Paper, Select, TextField, styled } from "@mui/material";
-import Grid from "@mui/material/Grid";
+import { Box, FormControl, MenuItem, Paper, Select, TextField, Typography, styled } from "@mui/material";
 import { TasksTable } from "./Common/TasksTable";
-
 import Reminder from "./Reminder";
 import { InternationaltimeZone, portUrl } from "../AppConfiguration";
+import "./Entry.css";
+import AddTaskIcon from "@mui/icons-material/AddTask";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
 
-// Styled component for consistent item styling
-const Item = styled(Paper)(({ theme }) => ({
+// Styled components for professional UI
+const StyledPaper = styled(Paper)(({ theme }) => ({
   backgroundColor: "#fff",
-  ...theme.typography.body2,
-  padding: theme.spacing(1),
-  textAlign: "center",
-  color: theme.palette.text.secondary,
-  ...theme.applyStyles("dark", {
-    backgroundColor: "#1A2027",
-  }),
+  padding: theme.spacing(3),
+  borderRadius: theme.spacing(1),
+  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    boxShadow: "0 6px 25px rgba(0,0,0,0.1)",
+  }
+}));
+
+const ActionButton = styled(Button)(({ theme }) => ({
+  borderRadius: theme.spacing(1),
+  padding: theme.spacing(1, 2),
+  textTransform: "none",
+  fontWeight: 500,
+  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+  transition: "all 0.2s ease",
+  "&:hover": {
+    transform: "translateY(-2px)",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+  }
 }));
 
 const Entry: React.FC = () => {
@@ -34,6 +50,8 @@ const Entry: React.FC = () => {
       timeZone: InternationaltimeZone,
     });
   });
+
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [refresh, setRefresh] = useState(true);
   const [period, setPeriod] = useState(new Date().getHours() >= 12 ? "PM" : "AM");
@@ -111,6 +129,7 @@ const Entry: React.FC = () => {
           const taskName = tasksResponse[2].trim();
           const description = tasksResponse[3].trim();
           const weight = tasksResponse[4]?.trim();
+          
 
 
 
@@ -122,6 +141,7 @@ const Entry: React.FC = () => {
             completed: false,
             category_id: 1, // Modify as needed
             weight: weight ? weight : 1,
+            date:date
           });
           setRefresh(true);
           setValue("");
@@ -139,85 +159,128 @@ const Entry: React.FC = () => {
   };
 
   return (
-    <div>
-      <span>
-        <b>Format: </b>
-      </span>
-      <span style={{ backgroundColor: "yellow", color: "black" }}>
-        <strong>StartTime</strong> - <strong>EndTime</strong> -
-        <span style={{ color: "blue" }}> TaskName</span> -
-        <span style={{ color: "green" }}> Description</span>
-      </span>
-      <br />
-      <br />
+    <div className="entry-container">
+      <div className="entry-header">
+        <Typography variant="h4" gutterBottom>Task Management</Typography>
+        <Typography variant="subtitle1" color="textSecondary">Create and manage your daily tasks</Typography>
+      </div>
+      
+      <div className="format-guide">
+        <Typography variant="subtitle2" gutterBottom>Input Format:</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+          <span className="highlight">StartTime</span> - 
+          <span className="highlight">EndTime</span> - 
+          <span className="task-name">TaskName</span> - 
+          <span className="description">Description</span>
+        </Box>
+      </div>
 
-      <Box sx={{ display: 'flex', width: '100%', gap: 2 }}>
-        <TextField
-          id="task"
-          label="Enter Task in above format and press enter"
-          variant="outlined"
-          fullWidth
-          onChange={(e) => setValue(e.target.value)}
-          value={value}
-          onKeyDown={handleKeyDown}
-        />
-        <FormControl fullWidth variant="outlined">
-          <Select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            sx={{ height: '56px' }} // Match TextField height
+      <StyledPaper className="control-panel">
+        <Box sx={{ display: 'flex', width: '100%', gap: 2, mb: 3 }}>
+          <TextField
+            id="task"
+            label="Enter Task"
+            placeholder="e.g., 9:00 - 10:00 - Meeting - Weekly team sync"
+            variant="outlined"
+            fullWidth
+            onChange={(e) => setValue(e.target.value)}
+            value={value}
+            onKeyDown={handleKeyDown}
+            sx={{ bgcolor: 'background.paper' }}
+          />
+          <FormControl variant="outlined" sx={{ minWidth: 100 }}>
+            <Select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              sx={{ height: '56px' }}
+            >
+              <MenuItem value="AM">AM</MenuItem>
+              <MenuItem value="PM">PM</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+          <TextField
+            label="Slot Duration"
+            type="number"
+            value={slotValue}
+            onChange={(e) => setSlotValue(parseInt(e.target.value))}
+            variant="outlined"
+            size="small"
+          />
+          <TextField
+            label="Rest Period"
+            type="number"
+            value={restValue}
+            onChange={(e) => setRestValue(parseInt(e.target.value))}
+            variant="outlined"
+            size="small"
+          />
+          <TextField
+            label="Start Time"
+            variant="outlined"
+            value={timeValue}
+            onChange={(e) => setTimeValue(e.target.value)}
+            size="small"
+          />
+          <TextField
+            type="date"
+            label="Date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            variant="outlined"
+            size="small"
+            InputLabelProps={{ shrink: true }}
+          />
+        </Box>
+
+        <div className="button-group">
+          <ActionButton 
+            variant="outlined" 
+            onClick={() => setOpenTable(prev => !prev)}
+            startIcon={<AddTaskIcon />}
           >
-            <MenuItem value="AM">AM</MenuItem>
-            <MenuItem value="PM">PM</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
+            {openTable ? 'Hide Tasks' : 'Show Tasks'}
+          </ActionButton>
+          <ActionButton 
+            variant="outlined" 
+            onClick={() => setReminderApp(prev => !prev)}
+            startIcon={<NotificationsActiveIcon />}
+          >
+            {reminderApp ? 'Hide Reminders' : 'Show Reminders'}
+          </ActionButton>
+          <ActionButton 
+            variant="contained" 
+            color="primary" 
+            onClick={LoadReminders}
+            startIcon={<RefreshIcon />}
+          >
+            Load Reminders
+          </ActionButton>
+          <ActionButton 
+            variant="contained" 
+            color="secondary" 
+            onClick={AutoCreate}
+            startIcon={<AutorenewIcon />}
+          >
+            Auto Reassign
+          </ActionButton>
+        </div>
+      </StyledPaper>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-
-        <Button variant="outlined" onClick={() => setOpenTable(prev => !prev)}>
-          {openTable ? 'Close Table' : 'Open Table'}
-        </Button>
-        <Button variant="outlined" onClick={() => setReminderApp(prev => !prev)}>
-          {reminderApp ? 'Close Reminder' : 'Open Reminder'}
-        </Button>
-        <Button variant="contained" color="primary" onClick={LoadReminders}>Load Reminders</Button>
-        <Button variant="contained" color="secondary" onClick={AutoCreate}>Auto reassign</Button>
-      </Box>
-
-      <Box sx={{ display: 'flex', gap: 2, marginTop: 2 }}>
-        <TextField
-          label="Slot"
-          type="number"
-          value={slotValue}
-          onChange={(e) => setSlotValue(parseInt(e.target.value))}
-          variant="outlined"
-        />
-        <TextField
-          label="Rest"
-          type="number"
-          value={restValue}
-          onChange={(e) => setRestValue(parseInt(e.target.value))}
-          variant="outlined"
-        />
-        <TextField
-          id="task"
-          label="Enter time"
-          variant="outlined"
-          value={timeValue}
-          onChange={(e) => setTimeValue(e.target.value)}
-        />
-      </Box>
-
-      {/* Conditional rendering for tasks table and reminders */}
-      <Box sx={{ display: 'flex', width: '100%' }}>
+      <div className="content-area">
         {refresh && openTable && (
-          <Box sx={{ width: '100%', pr: 2 }}>
-            <TasksTable />
+          <Box sx={{ width: '100%' }}>
+            <TasksTable date={date} />
           </Box>
         )}
-        {reminderApp && <Reminder />}
-      </Box>
+        {reminderApp && (
+          <Box sx={{ width: reminderApp && openTable ? '40%' : '100%' }}>
+            <Reminder />
+          </Box>
+        )}
+      </div>
     </div>
   );
 };

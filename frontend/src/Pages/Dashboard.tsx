@@ -25,17 +25,21 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays, setP
   useEffect(() => {
     if (habitNames.length > 0 && !selectedHabit) {
       setSelectedHabit(habitNames[0]);
+    } else if (habitNames.length > 0 && !habitNames.includes(selectedHabit)) {
+      // If the currently selected habit is no longer in the filtered list, select the first one
+      setSelectedHabit(habitNames[0]);
     }
-  }, [habitNames]);
+  }, [habitNames, selectedHabit]);
 
   const last30Days = Array.from({ length: noOfDays }, (_, i) => {
     return startOfDay(subDays(new Date(), noOfDays - i - 1));
   });
 
-  const getStatusForDay = (date: Date) => {
-    const dayData = habitData.find(habit =>
-      habit.taskName === selectedHabit &&
-      isSameDay(startOfDay(parseISO(habit.date)), startOfDay(date))
+  const getStatusForDay = (date: Date, habit: string = selectedHabit) => {
+    // Find habit data for the selected habit and date
+    const dayData = habitData.find(h =>
+      h.taskName === habit &&
+      isSameDay(startOfDay(parseISO(h.date)), startOfDay(date))
     );
 
     if (!dayData) return 'no-data';
@@ -44,13 +48,13 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays, setP
     return 'no-data';
   };
 
-  const calculateStats = () => {
+  const calculateStats = (habitName: string = selectedHabit) => {
     let completedCount = 0;
     let notCompletedCount = 0;
     let noDataCount = 0;
 
     last30Days.forEach(date => {
-      const status = getStatusForDay(date);
+      const status = getStatusForDay(date, habitName);
       if (status === 'completed') {
         completedCount++;
       } else if (status === 'procrastinated') {
@@ -64,10 +68,12 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays, setP
     const totalDays = completedCount + notCompletedCount + noDataCount;
     const percentage = totalDays > 0 ? (completedCount / totalDays) * 100 : 0;
 
-    // Set the percentage in the parent component
-    setPercentage(percentage);
+    // Set the percentage in the parent component if this is for the selected habit
+    if (habitName === selectedHabit) {
+      setPercentage(percentage);
+    }
 
-    return { completedCount, notCompletedCount, noDataCount };
+    return { completedCount, notCompletedCount, noDataCount, percentage };
   };
 
   const { completedCount, notCompletedCount, noDataCount } = calculateStats();
@@ -109,13 +115,36 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays, setP
         scrollButtons="auto"
         sx={{ mb: 3 }}
       >
-        {habitNames.map(habitName => (
-          <Tab
-            key={habitName}
-            label={habitName.slice(0, -16)}
-            value={habitName}
-          />
-        ))}
+        {habitNames.map(habitName => {
+          const stats = calculateStats(habitName);
+          const totalDays = stats.completedCount + stats.notCompletedCount + stats.noDataCount;
+          return (
+            <Tab
+              key={habitName}
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  {habitName.slice(0, -16)}
+                  <Box
+                    sx={{
+                      ml: 1,
+                      bgcolor: '#2da44e',
+                      color: 'white',
+                      borderRadius: '12px',
+                      padding: '0 6px',
+                      fontSize: '0.7rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      height: '18px'
+                    }}
+                  >
+                    {stats.completedCount}/{totalDays} ({Math.round(stats.percentage)}%)
+                  </Box>
+                </Box>
+              }
+              value={habitName}
+            />
+          );
+        })}
       </Tabs>
 
       <Box sx={{
@@ -169,7 +198,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays, setP
                   }}
                 >
                   {format(date, 'd')}
-                 
+
                   {format(date, 'MMM')}
                   <br />
                   {`${format(date, 'EEE')}`}
@@ -228,13 +257,16 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [noOfDays, setNoOfDays] = useState(30);
   const [percentage, setPercentage] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredHabitData, setFilteredHabitData] = useState<HabitDay[]>([]);
 
   useEffect(() => {
     const fetchHabitData = async () => {
       try {
-        const response = await fetch(`${portUrl}/tasks/graph`);
+        const response = await fetch(`${portUrl}/tasks/graph?days=${noOfDays}`);
         const data = await response.json();
         setHabitData(data);
+        setFilteredHabitData(data);
       } catch (error) {
         console.error('Error fetching habit data:', error);
       } finally {
@@ -243,7 +275,18 @@ const Dashboard: React.FC = () => {
     };
 
     fetchHabitData();
-  }, []);
+  }, [noOfDays]);
+
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredHabitData(habitData);
+    } else {
+      const filtered = habitData.filter(habit =>
+        habit.taskName.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredHabitData(filtered);
+    }
+  }, [searchTerm, habitData]);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -251,19 +294,30 @@ const Dashboard: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <TextField
-        id="outlined-number"
-        label="No of Days"
-        type="number"
-        value={noOfDays}
-        onChange={(e) => setNoOfDays(parseInt(e.target.value))}
-        slotProps={{
-          inputLabel: {
-            shrink: true,
-          },
-        }}
-      />
-      <HabitCalendar habitData={habitData} noOfDays={noOfDays} setPercentage={setPercentage} />
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+        <TextField
+          id="outlined-number"
+          label="No of Days"
+          type="number"
+          value={noOfDays}
+          onChange={(e) => setNoOfDays(parseInt(e.target.value))}
+          slotProps={{
+            inputLabel: {
+              shrink: true,
+            },
+          }}
+        />
+        <TextField
+          id="habit-search"
+          label="Search Habits"
+          variant="outlined"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          sx={{
+ width: '300px' }}
+        />
+      </Box>
+      <HabitCalendar habitData={filteredHabitData} noOfDays={noOfDays} setPercentage={setPercentage} />
       <Typography variant="h6" sx={{ mt: 2 }}>
         Completion Percentage: {percentage.toFixed(2)}%
       </Typography>
