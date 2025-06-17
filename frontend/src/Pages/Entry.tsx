@@ -47,12 +47,20 @@ const Entry: React.FC = () => {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
-      timeZone: InternationaltimeZone,
+    timeZone: "America/New_York", // Using EST timezone
     });
   });
-
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-
+ 
+const [date, setDate] = useState(() => {
+  const now = new Date();
+  // Format the date in EST timezone
+  const options = { timeZone: "America/New_York" };
+  const estDate = new Date(now.toLocaleString("en-US", options));
+  const year = estDate.getFullYear();
+  const month = String(estDate.getMonth() + 1).padStart(2, '0');
+  const day = String(estDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+});
   const [refresh, setRefresh] = useState(true);
   const [period, setPeriod] = useState(new Date().getHours() >= 12 ? "PM" : "AM");
   const [reminderApp, setReminderApp] = useState(false);
@@ -111,6 +119,7 @@ const Entry: React.FC = () => {
             completed: false,
             category_id: 1, // Modify as needed
             weight: weight ? weight : 1,
+            date:date
           });
           setRefresh(true);
           setValue("");

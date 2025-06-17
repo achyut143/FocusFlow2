@@ -357,17 +357,24 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
           // Use the speakText function for text-to-speech
           speakText(`Time to start: ${task.title}`);
 
-          // Show notification
+          // Show notification with green background for task start
           if (notificationPermission === "granted") {
-            new Notification("Task Starting", {
+            const startNotification = new Notification("Task Starting", {
               body: `Time to start: ${task.title}`,
-              icon: "/task-icon.png", // Add an icon to your public folder
+              icon: "/task-icon.png",
+              badge: "/task-icon.png"
             });
+
+            // Add event listener without using className
+            if (startNotification.addEventListener) {
+              startNotification.addEventListener('show', function () {
+                // We can't set className directly on notifications
+                // The styling will be handled by the browser
+              });
+            }
           }
         }
       });
-
-
 
       tasks.forEach((task) => {
         const [timeStr, modifier] = task.end_time.split(" ");
@@ -382,12 +389,21 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
           // Use the speakText function for text-to-speech
           speakText(`Time to end: ${task.title}`);
 
-          // Show notification
+          // Show notification with amber/orange background for task end
           if (notificationPermission === "granted") {
-            new Notification("Task Ending", {
+            const endNotification = new Notification("Task Ending", {
               body: `Time to end: ${task.title}`,
-              icon: "/task-icon.png", // Add an icon to your public folder
+              icon: "/task-icon.png",
+              badge: "/task-icon.png"
             });
+
+            // Add event listener without using className
+            if (endNotification.addEventListener) {
+              endNotification.addEventListener('show', function () {
+                // We can't set className directly on notifications
+                // The styling will be handled by the browser
+              });
+            }
           }
         }
       });

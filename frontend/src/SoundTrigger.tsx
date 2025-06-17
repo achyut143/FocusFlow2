@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './SoundTrigger.css';
 
 const SoundTrigger: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false); // State to track if sound should play
+  const [isPaused, setIsPaused] = useState<boolean>(false); // State to track if timer is paused
   const [intervalMinutes, setIntervalMinutes] = useState<number>(5); // State for interval in minutes
   const [counter, setCounter] = useState(0);
   const [startTime, setStartTime] = useState('');
   const [nextAlertTime, setNextAlertTime] = useState<string>('');
+  const lastTickRef = useRef<number>(0); // Reference to store the timestamp of the last tick
 
   useEffect(() => {
     // Function to play speech sound
@@ -16,7 +18,7 @@ const SoundTrigger: React.FC = () => {
       setCounter(newCounter);
 
       // Create speech synthesis message
-      const message = `Interval Number ${newCounter} ended. I repeat, Interval Number ${newCounter} ended`;
+      const message = `Interval Number ${newCounter} ended. Jai shree Krishna`;
 
       // Use speech synthesis API
       const speech = new SpeechSynthesisUtterance(message);
@@ -28,27 +30,45 @@ const SoundTrigger: React.FC = () => {
       window.speechSynthesis.speak(speech);
     };
 
-    // Set an interval to play the sound based on the specified minutes if isPlaying is true
+    // Set an interval to check elapsed time and play sound if needed
     let intervalId: NodeJS.Timeout | undefined;
-    if (isPlaying) {
+    if (isPlaying && !isPaused) {
       const intervalMilliseconds = intervalMinutes * 60000; // Convert minutes to milliseconds
-      intervalId = setInterval(playSound, intervalMilliseconds);
+      lastTickRef.current = Date.now(); // Store current time
 
       // Calculate and set the next alert time
       const now = new Date();
       const nextAlert = new Date(now.getTime() + intervalMilliseconds);
       setNextAlertTime(nextAlert.toLocaleTimeString());
+
+      // Check actual elapsed time to handle sleep/suspend cases
+      intervalId = setInterval(() => {
+        const now = Date.now();
+        const elapsed = now - lastTickRef.current;
+
+        // If elapsed time is close to or exceeds the interval, trigger sound
+        if (elapsed >= intervalMilliseconds) {
+          playSound();
+          lastTickRef.current = now; // Reset the timer
+
+          // Update next alert time
+          const nextAlert = new Date(now + intervalMilliseconds);
+          setNextAlertTime(nextAlert.toLocaleTimeString());
+        }
+      }, 1000); // Check every second
     } else {
-      setNextAlertTime('');
+      if (!isPlaying) {
+        setNextAlertTime('');
+      }
     }
 
-    // Clean up the interval on component unmount or when isPlaying or intervalMinutes changes
+    // Clean up the interval on component unmount or when dependencies change
     return () => {
       if (intervalId) {
         clearInterval(intervalId);
       }
     };
-  }, [isPlaying, intervalMinutes, counter]);
+  }, [isPlaying, isPaused, intervalMinutes, counter]);
 
   return (
     <div className="sound-trigger-container">
@@ -81,9 +101,11 @@ const SoundTrigger: React.FC = () => {
               onChange={() => {
                 const newIsPlaying = !isPlaying;
                 setIsPlaying(newIsPlaying);
+                setIsPaused(false); // Reset pause state when toggling play/stop
                 if (newIsPlaying) {
                   const currentTime = new Date();
                   setStartTime(currentTime.toLocaleTimeString());
+                  lastTickRef.current = Date.now(); // Initialize the timer reference
                 }
               }}
             />
@@ -102,6 +124,53 @@ const SoundTrigger: React.FC = () => {
             min="1"
           />
           <span className="interval-label">minutes</span>
+        </div>
+
+        <div className="button-controls">
+          <button
+            className="control-button"
+            onClick={() => {
+              setCounter(0);
+              if (isPlaying && !isPaused) {
+                lastTickRef.current = Date.now();
+                const nextAlert = new Date(Date.now() + intervalMinutes * 60000);
+                setNextAlertTime(nextAlert.toLocaleTimeString());
+              }
+            }}
+          >
+            Reset
+          </button>
+
+          {isPlaying && (
+            <button
+              className="control-button"
+              onClick={() => {
+                setIsPaused(!isPaused);
+                if (isPaused) {
+                  // Coming back to live - reset the timer reference
+                  lastTickRef.current = Date.now();
+                  const nextAlert = new Date(Date.now() + intervalMinutes * 60000);
+                  setNextAlertTime(nextAlert.toLocaleTimeString());
+                }
+              }}
+            >
+              {isPaused ? 'Resume' : 'Pause'}
+            </button>
+          )}
+
+          {isPlaying && (
+            <button
+              className="control-button"
+              onClick={() => {
+                // Come back to live - reset the timer reference
+                lastTickRef.current = Date.now();
+                const nextAlert = new Date(Date.now() + intervalMinutes * 60000);
+                setNextAlertTime(nextAlert.toLocaleTimeString());
+              }}
+            >
+              Sync Timer
+            </button>
+          )}
         </div>
       </div>
     </div>

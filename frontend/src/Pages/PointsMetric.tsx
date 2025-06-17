@@ -48,7 +48,7 @@ const PointsCalendar: React.FC<PointsCalendarProps> = ({ pointsData, setBackDate
         const pointsLost = (points.notCompletedPoints + points.habitProcrastinatedPoints)
         const net = pointsEarned - pointsLost
         const totalPointsForDay = (points.totalPoints + points.totalPointsHabits)
-        const total = pointsEarned - pointsLost;
+const total = (pointsEarned - pointsLost).toFixed(2);
         return `${total}/${totalPointsForDay}`;
     };
 

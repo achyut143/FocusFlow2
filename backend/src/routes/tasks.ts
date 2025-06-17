@@ -595,11 +595,14 @@ router.get('/tasks/:id', async (req, res) => {
 
 
 router.get('/graph', async (req, res) => {
-    const days = req.query.days ? parseInt(req.query.days as string) : 30; // Default to 30 days if not specified
+    const days = req.query.days && !Number.isNaN(req.query.days) ? parseInt(req.query.days as string) : 30; // Default to 30 days if not specified
+    console.log('daysAMS', days)
 
     // Calculate the date for filtering
-    const date = new Date();
+   const date = new Date(); // Fallback date if current date is invalid
+  
     date.setDate(date.getDate() - days);
+    console.log('dateAMS',date)
     const filterDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
 
     const db = await openDb();

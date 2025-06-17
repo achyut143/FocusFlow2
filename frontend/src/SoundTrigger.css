@@ -142,9 +142,40 @@ input:checked + .toggle-slider:before {
   color: #424242;
 }
 
+.button-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.control-button {
+  padding: 8px 16px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #424242;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-button:hover {
+  background-color: #e0e0e0;
+  border-color: #bdbdbd;
+}
+
+.control-button:active {
+  background-color: #d5d5d5;
+}
+
 @media (max-width: 600px) {
   .sound-trigger-container {
     padding: 16px;
     margin: 20px auto;
+  }
+  
+  .button-controls {
+    flex-wrap: wrap;
   }
 }
