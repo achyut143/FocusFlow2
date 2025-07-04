@@ -9,6 +9,7 @@ const initDatabase = async () => {
 
   const deleteTables = false
   const createTables = false
+  const createNotesTable = true
 
   const insertCategory = async (name: string, target: number) => {
     const sql = `INSERT INTO category (name, target) VALUES (?, ?)`; // Adjust table name and columns as needed
@@ -22,6 +23,18 @@ const initDatabase = async () => {
     await db.exec(`DELETE FROM task `)
     await db.exec(`DELETE FROM reminders `)
     await db.exec(`DELETE FROM habit `)
+  }
+
+  if(createNotesTable){
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        pinned BOOLEAN NOT NULL DEFAULT 0,
+        notes TEXT
+      )
+    `);
+
   }
 
 

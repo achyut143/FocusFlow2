@@ -1,6 +1,7 @@
 import { Box, Button, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material"
 import { useEffect, useState } from "react"
-import { TasksTable } from "./TasksTable"
+import TasksCalendarView from "./TasksCalendarView"
+import { TasksTable } from "./TasksTable";
 
 interface SearchProps {
 
@@ -12,11 +13,11 @@ export interface searchFilters {
   limit?: number;
   notes?: boolean;
   startDate?: string;
-  endDate?:string;
+  endDate?: string;
 }
 
 export const Search: React.FC<SearchProps> = ({ }) => {
-  const [searchText, setSearchText] = useState<searchFilters>({ text: '', notes: true, startDate: '',endDate:'' })
+  const [searchText, setSearchText] = useState<searchFilters>({ text: '', notes: true, startDate: '', endDate: '' })
   const [delayedText, setDelayedText] = useState<searchFilters>(searchText)
 
 
@@ -50,14 +51,14 @@ export const Search: React.FC<SearchProps> = ({ }) => {
         },
       }}
     /> */}
-  
-  <TextField
+
+    <TextField
       id="outlined-number"
       label="Start Date"
       type="date"
       sx={{ width: '20%' }}
       value={searchText.startDate}
-      onChange={(e) => setSearchText({ ...searchText, startDate:e.target.value })}
+      onChange={(e) => setSearchText({ ...searchText, startDate: e.target.value })}
       slotProps={{
         inputLabel: {
           shrink: true,
@@ -65,13 +66,13 @@ export const Search: React.FC<SearchProps> = ({ }) => {
       }}
     />
 
-<TextField
+    <TextField
       id="outlined-number"
       label="End Date"
       type="date"
       sx={{ width: '20%' }}
       value={searchText.endDate}
-      onChange={(e) => setSearchText({ ...searchText, endDate:e.target.value })}
+      onChange={(e) => setSearchText({ ...searchText, endDate: e.target.value })}
       slotProps={{
         inputLabel: {
           shrink: true,
@@ -80,26 +81,26 @@ export const Search: React.FC<SearchProps> = ({ }) => {
     />
 
 
-   
-      <FormControl>
-        <InputLabel id="demo-simple-select-label">Notes</InputLabel>
-        <Select
-          labelId="demo-simple-select-label"
-          id="demo-simple-select"
-          value={searchText.notes ? "Yes" : "No"}
-          label="Notes"
-          onChange={(e) =>
-            setSearchText({ ...searchText, notes: e.target.value === "Yes" ? true : false })
-          }
-        >
-          <MenuItem value={"Yes"}>Yes</MenuItem>
-          <MenuItem value={"No"}>No</MenuItem>
 
-        </Select>
-      </FormControl>
-  
+    <FormControl>
+      <InputLabel id="demo-simple-select-label">Notes</InputLabel>
+      <Select
+        labelId="demo-simple-select-label"
+        id="demo-simple-select"
+        value={searchText.notes ? "Yes" : "No"}
+        label="Notes"
+        onChange={(e) =>
+          setSearchText({ ...searchText, notes: e.target.value === "Yes" ? true : false })
+        }
+      >
+        <MenuItem value={"Yes"}>Yes</MenuItem>
+        <MenuItem value={"No"}>No</MenuItem>
 
-      <Button variant="contained" color="secondary" onClick={()=>setDelayedText(searchText)}>Search</Button>
+      </Select>
+    </FormControl>
+
+
+    <Button variant="contained" color="secondary" onClick={() => setDelayedText(searchText)}>Search</Button>
     {delayedText.text && <TasksTable search={delayedText} />}
 
   </>

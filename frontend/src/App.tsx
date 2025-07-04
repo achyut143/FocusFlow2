@@ -26,6 +26,7 @@ const App: React.FC = () => {
   
   
       <Box sx={{ width: "100%", typography: "body1" }}>
+         <SoundTrigger/>
         <TabContext value={value}>
           <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
             <TabList onChange={handleChange} aria-label="lab API tabs example">
@@ -48,7 +49,7 @@ const App: React.FC = () => {
             <Search />
           </TabPanel>
         </TabContext>
-        <SoundTrigger/>
+       
      
         
       </Box>

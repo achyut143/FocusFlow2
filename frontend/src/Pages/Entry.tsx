@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import Button from "@mui/material/Button";
 import { Box, FormControl, MenuItem, Paper, Select, TextField, Typography, styled } from "@mui/material";
-import { TasksTable } from "./Common/TasksTable";
+import TasksCalendarView from "./Common/TasksCalendarView";
 import Reminder from "./Reminder";
 import { InternationaltimeZone, portUrl } from "../AppConfiguration";
 import "./Entry.css";
@@ -278,19 +278,19 @@ const [date, setDate] = useState(() => {
         </div>
       </StyledPaper>
 
-      <div className="content-area">
+      {/* <div className="content-area"> */}
         {refresh && openTable && (
-          <Box sx={{ width: '100%' }}>
-            <TasksTable date={date} />
-          </Box>
+          // <Box sx={{ width: '100%' }}>
+            <TasksCalendarView date={date} setBackDate={setDate} />
+          // </Box>
         )}
-        {reminderApp && (
+        {/* {reminderApp && (
           <Box sx={{ width: reminderApp && openTable ? '40%' : '100%' }}>
             <Reminder />
           </Box>
-        )}
+        )} */}
       </div>
-    </div>
+    // </div>
   );
 };
 

@@ -23,6 +23,7 @@ import {
   CardContent,
   Divider,
   Chip,
+  Accordion,
 } from "@mui/material";
 import "./TasksTable.css";
 import { styled } from "@mui/material/styles";
@@ -137,39 +138,39 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 
 const InterruptedRow = styled(TableRow)(({ theme }) => ({
   backgroundColor: theme.palette.warning.light + "40", // Color for cancelled tasks
-  "&:hover": {
-    backgroundColor: theme.palette.warning.light + "60",
-  },
+  // "&:hover": {
+  //   backgroundColor: theme.palette.warning.light + "60",
+  // },
 }));
 
 const CompletedRow = styled(TableRow)(({ theme }) => ({
   backgroundColor: theme.palette.success.light + "40", // Light green with 40% opacity
-  "&:hover": {
-    backgroundColor: theme.palette.success.light + "60", // Light green with 60% opacity on hover
-  },
+  // "&:hover": {
+  //   backgroundColor: theme.palette.success.light + "60", // Light green with 60% opacity on hover
+  // },
 }));
 
 const CompletedRowDarker = styled(TableRow)(({ theme }) => ({
   backgroundColor: theme.palette.success.dark + "40", // Darker green with 40% opacity
-  "&:hover": {
-    backgroundColor: theme.palette.success.dark + "60", // Darker green with 60% opacity on hover
-  },
+  // "&:hover": {
+  //   backgroundColor: theme.palette.success.dark + "60", // Darker green with 60% opacity on hover
+  // },
 }));
 
 const CompletedRowLighter = styled(TableRow)(({ theme }) => ({
   backgroundColor: theme.palette.success.light + "20", // Lighter green with 20% opacity
-  "&:hover": {
-    backgroundColor: theme.palette.success.light + "40", // Lighter green with 40% opacity on hover
-  },
+  // "&:hover": {
+  //   backgroundColor: theme.palette.success.light + "40", // Lighter green with 40% opacity on hover
+  // },
 }));
 
 const DisabledRow = styled(TableRow)(({ theme }) => ({
   backgroundColor: theme.palette.grey[100] + "40",
   opacity: 0.8,
   position: 'relative',
-  "&:hover": {
-    backgroundColor: theme.palette.grey[200] + "60",
-  },
+  // "&:hover": {
+  //   backgroundColor: theme.palette.grey[200] + "60",
+  // },
   "& td": {
     color: theme.palette.text.disabled,
     fontStyle: 'bold',
@@ -190,9 +191,9 @@ const DisabledRow = styled(TableRow)(({ theme }) => ({
 
 const CancelledRow = styled(TableRow)(({ theme }) => ({
   backgroundColor: theme.palette.error.light + "40", // Color for interrupted tasks
-  "&:hover": {
-    backgroundColor: theme.palette.error.light + "60",
-  },
+  // "&:hover": {
+  //   backgroundColor: theme.palette.error.light + "60",
+  // },
 }));
 
 const HighlightedRow = styled(TableRow, {
@@ -219,11 +220,11 @@ const HighlightedRow = styled(TableRow, {
         : theme.palette.primary.light + "20",
     },
   },
-  "&:hover": {
-    backgroundColor: completed
-      ? theme.palette.success.light + "60"
-      : theme.palette.primary.light + "60",
-  },
+  // "&:hover": {
+  //   backgroundColor: completed
+  //     ? theme.palette.success.light + "60"
+  //     : theme.palette.primary.light + "60",
+  // },
 }));
 
 
@@ -251,11 +252,11 @@ const HighlightedRowYellow = styled(TableRow, {
         : theme.palette.warning.light + "20",
     },
   },
-  "&:hover": {
-    backgroundColor: completed
-      ? theme.palette.warning.light + "60"
-      : theme.palette.warning.light + "60",
-  },
+  // "&:hover": {
+  //   backgroundColor: completed
+  //     ? theme.palette.warning.light + "60"
+  //     : theme.palette.warning.light + "60",
+  // },
 }));
 
 const RegularRow = styled(TableRow)(({ theme }) => ({
@@ -265,10 +266,10 @@ const RegularRow = styled(TableRow)(({ theme }) => ({
   "&:nth-of-type(even)": {
     backgroundColor: "#F1F5F9",
   },
-  "&:hover": {
-    backgroundColor: "#E2E8F0",
-    transition: "background-color 0.3s ease",
-  },
+  // "&:hover": {
+  //   backgroundColor: "#E2E8F0",
+  //   transition: "background-color 0.3s ease",
+  // },
   "&:last-child td, &:last-child th": {
     border: 0,
   },
@@ -1188,53 +1189,6 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
 
         </Table>
       </TableContainer>
-      {/* tracking*/}
-      {<>{track.map((task) => {
-        const totalMinutes = calculateMinutes(task);
-        const { hours, remainingMinutes } = convertMinutesToHours(totalMinutes);
-
-        {
-          return (
-            <Box
-              key={task}
-              sx={{
-                padding: 2,
-                border: '1px solid #ccc',
-                borderRadius: 1,
-                backgroundColor: '#f9f9f9',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
-              <Typography
-                variant="h6"
-                component="span"
-                color="text.primary"
-                fontWeight="bold"
-              >
-                Total {task} Minutes:
-              </Typography>
-              <Typography
-                variant="h6"
-                component="span"
-                color="primary"
-                sx={{ marginLeft: 1 }}
-              >
-                {`${totalMinutes} minutes = ${hours} hours and ${remainingMinutes} minutes`}
-              </Typography>
-            </Box>)
-        }
-      })}
-
-
-
-      </>}
-
-
-
-
-
-
 
 
       <Box

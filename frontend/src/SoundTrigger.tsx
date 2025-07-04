@@ -18,7 +18,7 @@ const SoundTrigger: React.FC = () => {
       setCounter(newCounter);
 
       // Create speech synthesis message
-      const message = `Interval Number ${newCounter} ended. Jai shree Krishna`;
+      const message = `Hi Achyut,  Interval ${newCounter} ended. Hi Achyut,  Interval ${newCounter} ended.`;
 
       // Use speech synthesis API
       const speech = new SpeechSynthesisUtterance(message);

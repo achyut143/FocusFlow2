@@ -116,7 +116,7 @@ router.post('/tasks', async (req, res) => {
             const result = await db.run(`
                 INSERT INTO task (title, description, start_time, end_time, completed, category_id, date, weight) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, description, start_time, end_time, completed, category_id, date,weight]
+                [title, description, start_time, end_time, completed, category_id, date, weight]
             );
             await db.close();
             res.status(201).json({ id: result.lastID });;
@@ -321,6 +321,24 @@ router.post('/notes', async (req: Request, res: Response) => {
     }
 });
 
+router.post('/deletehabitTask', async (req: Request, res: Response) => {
+    const { title } = req.body;
+    try {
+        const db = await openDb();
+        
+        await db.run(
+            `DELETE FROM habit WHERE taskName = ?;`,
+            [title]
+        );
+        await db.close();
+        res.status(201).json({ deleted: title });
+
+    } catch (err) {
+        console.error('Error updating notes:', err);
+        res.status(500).json({ message: 'Error updating notes' });
+    }
+});
+
 
 
 
@@ -452,13 +470,13 @@ router.post('/gettasks', async (req: Request, res: Response) => {
             if (date) {
                 tasks = await db.all(`
                 SELECT * FROM task 
-                WHERE (date = ? OR 
-                      LOWER(title) LIKE '%i get to do it%' COLLATE NOCASE)
+                WHERE ((date = ? OR 
+                      LOWER(title) LIKE '%i get to do it%' COLLATE NOCASE))  AND deletedAt IS NULL 
             `, [date]);
 
                 const habitTasks = await db.all(`
                 SELECT * FROM habit 
-                WHERE date = ?
+                WHERE date = ? 
             `, [date]);
 
                 const habitTaskNames = habitTasks.map(habit =>
@@ -495,14 +513,14 @@ router.post('/gettasks', async (req: Request, res: Response) => {
             } else {
                 tasks = await db.all(`
                 SELECT * FROM task 
-                WHERE (date = DATE(DATETIME('now', 'localtime')) OR 
-                      LOWER(title) LIKE '%i get to do it%' COLLATE NOCASE)
+                WHERE ((date = DATE(DATETIME('now', 'localtime')) OR 
+                      LOWER(title) LIKE '%i get to do it%' COLLATE NOCASE))
                 AND deletedAt IS NULL
             `);
 
                 const habitTasks = await db.all(`
                 SELECT * FROM habit 
-                WHERE date =  DATE(DATETIME('now', 'localtime'))
+                WHERE date =  DATE(DATETIME('now', 'localtime')) 
             `);
 
                 const habitTaskNames = habitTasks.map(habit =>
@@ -576,6 +594,7 @@ router.post('/gettasks', async (req: Request, res: Response) => {
 
 
     } catch (error) {
+        console.error('Error fetching tasks:', error);
         res.status(500).json({ error: 'Failed to fetch tasks' });
     }
 });
@@ -599,10 +618,10 @@ router.get('/graph', async (req, res) => {
     console.log('daysAMS', days)
 
     // Calculate the date for filtering
-   const date = new Date(); // Fallback date if current date is invalid
-  
+    const date = new Date(); // Fallback date if current date is invalid
+
     date.setDate(date.getDate() - days);
-    console.log('dateAMS',date)
+    console.log('dateAMS', date)
     const filterDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
 
     const db = await openDb();
@@ -715,6 +734,8 @@ router.delete('/tasks/:id', async (req, res) => {
     res.json({ message: 'Task deleted' });
 });
 
+
+
 router.delete('/deleteForever/:id', async (req, res) => {
     const db = await openDb();
     await db.run('DELETE FROM task  WHERE id = ?', [req.params.id]);
@@ -778,15 +799,23 @@ router.get('/pointsGraph', async (req, res) => {
             ORDER BY date DESC
         `);
 
-        const totalPointsHabits = await db.get(`SELECT SUM(weight) as total FROM task WHERE   title LIKE '%' || LOWER('I get to do it') || '%' COLLATE NOCASE`);
-
+const totalPointsHabits = await db.all(`
+  SELECT weight as total, date 
+  FROM task 
+  WHERE LOWER(title) LIKE '%i get to do it%' COLLATE NOCASE 
+  AND deletedAt IS NULL
+`);
         // Merge the results by date
         const mergedResults = results.map(taskDay => {
             const habitDay = habitResults.find(h => h.date === taskDay.date) || {
                 habitDonePoints: 0,
                 habitProcrastinatedPoints: 0
             };
-
+    
+    // Find habit points for dates equal to or greater than the task date
+    const relevantHabitPoints = totalPointsHabits
+        .filter(h => h.date <= taskDay.date)
+        .reduce((sum, item) => sum + (item.total || 0), 0);
             return {
                 date: taskDay.date,
                 completedPoints: taskDay.completedPoints || 0,
@@ -794,7 +823,7 @@ router.get('/pointsGraph', async (req, res) => {
                 habitDonePoints: habitDay.habitDonePoints || 0,
                 habitProcrastinatedPoints: habitDay.habitProcrastinatedPoints || 0,
                 totalPoints: taskDay.totalPoints || 0,
-                totalPointsHabits: totalPointsHabits.total || 0
+                totalPointsHabits: relevantHabitPoints || 0
             };
         });
 

@@ -12,7 +12,7 @@ import {
 import 'draft-js/dist/Draft.css';
 import axios from 'axios';
 import { portUrl } from '../../AppConfiguration';
-import { Task } from './TasksTable';
+import { Task } from './TasksCalendarView';
 import { format } from 'date-fns';
 import {
     Dialog,
