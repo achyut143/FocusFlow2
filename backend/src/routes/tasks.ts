@@ -327,7 +327,7 @@ router.post('/deletehabitTask', async (req: Request, res: Response) => {
         const db = await openDb();
         
         await db.run(
-            `DELETE FROM habit WHERE taskName = ?;`,
+            `DELETE FROM habit WHERE taskName = ?`,
             [title]
         );
         await db.close();
@@ -632,7 +632,7 @@ router.get('/graph', async (req, res) => {
     SUM(CASE WHEN done = 1 THEN 1 ELSE 0 END) AS completed_tasks,
     SUM(CASE WHEN procrastinated = 1 THEN 1 ELSE 0 END) AS not_completed_tasks
 FROM habit
-WHERE date >= ?
+WHERE date >= ? 
 GROUP BY 
     taskName, date`, [filterDate]);
 

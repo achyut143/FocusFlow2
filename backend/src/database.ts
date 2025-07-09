@@ -9,13 +9,19 @@ const initDatabase = async () => {
 
   const deleteTables = false
   const createTables = false
-  const createNotesTable = true
+  const createNotesTable = false
+  const deleteAHabit = true
 
   const insertCategory = async (name: string, target: number) => {
     const sql = `INSERT INTO category (name, target) VALUES (?, ?)`; // Adjust table name and columns as needed
 
     await db.run(sql, [name, target])
   };
+
+  if(deleteAHabit){
+    await db.exec(`DELETE FROM habit where taskName LIKE 'prepare%'`)
+
+  }
 
 
   if (deleteTables) {

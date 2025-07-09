@@ -507,7 +507,9 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
         try {
             if (title.toLowerCase().includes("i get to do it")) {
                 await axios.delete(`${portUrl}/tasks/tasks/${taskId}`);
-                await axios.post(`${portUrl}/tasks/deletehabitTask`,);
+                await axios.post(`${portUrl}/tasks/deletehabitTask`,{
+                    title:title
+                });
             } else {
                 await axios.delete(`${portUrl}/tasks/tasks/${taskId}`);
                 // Update local state by filtering out the deleted task

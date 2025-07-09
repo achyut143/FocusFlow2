@@ -3,6 +3,7 @@ import './SoundTrigger.css';
 
 const SoundTrigger: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false); // State to track if sound should play
+  const [isSimple, setIsSimple] = useState<boolean>(false)
   const [isPaused, setIsPaused] = useState<boolean>(false); // State to track if timer is paused
   const [intervalMinutes, setIntervalMinutes] = useState<number>(5); // State for interval in minutes
   const [counter, setCounter] = useState(0);
@@ -17,8 +18,14 @@ const SoundTrigger: React.FC = () => {
       const newCounter = counter + 1;
       setCounter(newCounter);
 
+
+
       // Create speech synthesis message
-      const message = `Hi Achyut,  Interval ${newCounter} ended. Hi Achyut,  Interval ${newCounter} ended.`;
+      let message = `Hi Achyut,  Interval ${newCounter} ended. Hi Achyut,  Interval ${newCounter} ended.`;
+      if(isSimple){
+        message =   `${newCounter}`
+        
+      }
 
       // Use speech synthesis API
       const speech = new SpeechSynthesisUtterance(message);
@@ -171,6 +178,15 @@ const SoundTrigger: React.FC = () => {
               Sync Timer
             </button>
           )}
+              <button
+              className="control-button"
+              onClick={() => {
+                setIsSimple(!isSimple);
+               
+              }}
+            >
+              {isSimple ? 'keep noisy' : 'Keep simple'}
+            </button>
         </div>
       </div>
     </div>
