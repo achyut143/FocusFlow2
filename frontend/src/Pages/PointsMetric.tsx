@@ -18,18 +18,30 @@ interface PointsDay {
 interface PointsCalendarProps {
     pointsData: PointsDay[];
     setBackDate: React.Dispatch<React.SetStateAction<string>>
-    noOfDays: number;
+    fromDate: Date;
+    toDate: Date;
 }
 
-const PointsCalendar: React.FC<PointsCalendarProps> = ({ pointsData, setBackDate, noOfDays }) => {
+const PointsCalendar: React.FC<PointsCalendarProps> = ({ pointsData, setBackDate, fromDate, toDate }) => {
 
 
 
 
-    const last30Days = Array.from({ length: noOfDays }, (_, i) => {
-        // Use startOfDay to normalize the time to midnight
-        return startOfDay(subDays(new Date(), noOfDays - i - 1));
-    });
+    // Generate array of dates between fromDate and toDate
+    const getDatesInRange = (start: Date, end: Date) => {
+        const dates = [];
+        let currentDate = startOfDay(start);
+        const lastDate = startOfDay(end);
+
+        while (currentDate <= lastDate) {
+            dates.push(new Date(currentDate));
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        return dates;
+    };
+
+    const dateRange = getDatesInRange(fromDate, toDate);
 
 
 
@@ -48,7 +60,7 @@ const PointsCalendar: React.FC<PointsCalendarProps> = ({ pointsData, setBackDate
         const pointsLost = (points.notCompletedPoints + points.habitProcrastinatedPoints)
         const net = pointsEarned - pointsLost
         const totalPointsForDay = (points.totalPoints + points.totalPointsHabits)
-const total = (pointsEarned - pointsLost).toFixed(2);
+        const total = (pointsEarned - pointsLost).toFixed(2);
         return `${total}/${totalPointsForDay}`;
     };
 
@@ -125,7 +137,7 @@ const total = (pointsEarned - pointsLost).toFixed(2);
                 gap: 1,
                 mb: 2
             }}>
-                {last30Days.map((date) => (
+                {dateRange.map((date) => (
 
                     <Tooltip
                         key={date.toISOString()}
@@ -350,24 +362,27 @@ const PointsMetric: React.FC = () => {
     const [PointsData, setPointsData] = useState<PointsDay[]>([]);
     const [loading, setLoading] = useState(true);
     const [backDate, setBackDate] = useState('')
-    const [noOfDays, setNoOfDays] = useState(30)
+    const [fromDate, setFromDate] = useState<Date>(subDays(new Date(), 30));
+    const [toDate, setToDate] = useState<Date>(new Date())
 
 
     useEffect(() => {
         const fetchPointsData = async () => {
             try {
-                const response = await fetch('http://localhost:5000/tasks/pointsGraph');
+                const fromDateStr = format(fromDate, 'yyyy-MM-dd');
+                const toDateStr = format(toDate, 'yyyy-MM-dd');
+                const response = await fetch(`http://localhost:5000/tasks/pointsGraph?fromDate=${fromDateStr}&toDate=${toDateStr}`);
                 const data = await response.json();
                 setPointsData(data);
             } catch (error) {
-                console.error('Error fetching habit data:', error);
+                console.error('Error fetching points data:', error);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchPointsData();
-    }, []);
+    }, [fromDate, toDate]);
 
     if (loading) {
         return <div>Loading...</div>;
@@ -378,21 +393,31 @@ const PointsMetric: React.FC = () => {
     return (
         <Box sx={{ p: 3 }}>
             {void console.log(backDate)}
-          
-            <TextField
-                id="outlined-number"
-                label="No of Days"
-                type="number"
-                value={noOfDays} 
-                onChange={(e) => setNoOfDays(parseInt(e.target.value))}
-                slotProps={{
-                    inputLabel: {
-                        shrink: true,
-                    },
-                }}
-            />
 
-            <PointsCalendar pointsData={PointsData} setBackDate={setBackDate} noOfDays={noOfDays} />
+            <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+                <TextField
+                    id="date-from"
+                    label="From Date"
+                    type="date"
+                    value={format(fromDate, 'yyyy-MM-dd')}
+                    onChange={(e) => setFromDate(parseISO(e.target.value))}
+                    InputLabelProps={{
+                        shrink: true,
+                    }}
+                />
+                <TextField
+                    id="date-to"
+                    label="To Date"
+                    type="date"
+                    value={format(toDate, 'yyyy-MM-dd')}
+                    onChange={(e) => setToDate(parseISO(e.target.value))}
+                    InputLabelProps={{
+                        shrink: true,
+                    }}
+                />
+            </Box>
+
+            <PointsCalendar pointsData={PointsData} setBackDate={setBackDate} fromDate={fromDate} toDate={toDate} />
             {backDate && <TasksCalendarView date={backDate} key={backDate} setBackDate={setBackDate} />}
         </Box>
     );

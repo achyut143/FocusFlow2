@@ -16,44 +16,42 @@ const App: React.FC = () => {
 
 
 
-  
+
 
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
     setValue(newValue);
   };
 
   return (
-  
-  
-      <Box sx={{ width: "100%", typography: "body1" }}>
-         <SoundTrigger/>
-        <TabContext value={value}>
-          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-            <TabList onChange={handleChange} aria-label="lab API tabs example">
-              <Tab label="Tasks" value="1" />
-              <Tab label="Points Metric" value="2" />
-              <Tab label="Habit Metrics" value="3" />
-              <Tab label="Search" value="4" />
-            </TabList>
-          </Box>
-          <TabPanel value="1">
-            <Entry />
-          </TabPanel>
-          <TabPanel value="2">
-            <PointsMetric />
-          </TabPanel>
-          <TabPanel value="3">
-            <Dashboard />
-          </TabPanel>
-          <TabPanel value="4">
-            <Search />
-          </TabPanel>
-        </TabContext>
-       
-     
-        
-      </Box>
-    
+    <Box sx={{ width: "100%", typography: "body1" }}>
+      <SoundTrigger />
+      <TabContext value={value}>
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          <TabList onChange={handleChange} aria-label="lab API tabs example">
+            <Tab label="Tasks" value="1" />
+            <Tab label="Points Metric" value="2" />
+            <Tab label="Habit Metrics" value="3" />
+            <Tab label="Search" value="4" />
+          </TabList>
+        </Box>
+        <TabPanel value="1">
+          <Entry />
+        </TabPanel>
+        <TabPanel value="2">
+          <PointsMetric />
+        </TabPanel>
+        <TabPanel value="3">
+          <Dashboard />
+        </TabPanel>
+        <TabPanel value="4">
+          <Search />
+        </TabPanel>
+      </TabContext>
+
+
+
+    </Box>
+
 
   );
 };

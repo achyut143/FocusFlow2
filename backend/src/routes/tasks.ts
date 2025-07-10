@@ -92,7 +92,7 @@ router.post('/remindersToTasks', async (req, res) => {
 });
 
 router.post('/tasks', async (req, res) => {
-    const { title, description, start_time, end_time, completed, category_id, weight, date } = req.body;
+    const { title, description, start_time, end_time, completed, category_id, weight, date, repeat } = req.body;
     const db = await openDb();
 
     try {
@@ -114,9 +114,9 @@ router.post('/tasks', async (req, res) => {
         } else {
             // Use current date
             const result = await db.run(`
-                INSERT INTO task (title, description, start_time, end_time, completed, category_id, date, weight) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, description, start_time, end_time, completed, category_id, date, weight]
+                INSERT INTO task (title, description, start_time, end_time, completed, category_id, date, weight,repeat_again) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)`,
+                [title, description, start_time, end_time, completed, category_id, date, weight, repeat]
             );
             await db.close();
             res.status(201).json({ id: result.lastID });;
@@ -325,7 +325,7 @@ router.post('/deletehabitTask', async (req: Request, res: Response) => {
     const { title } = req.body;
     try {
         const db = await openDb();
-        
+
         await db.run(
             `DELETE FROM habit WHERE taskName = ?`,
             [title]
@@ -614,15 +614,29 @@ router.get('/tasks/:id', async (req, res) => {
 
 
 router.get('/graph', async (req, res) => {
-    const days = req.query.days && !Number.isNaN(req.query.days) ? parseInt(req.query.days as string) : 30; // Default to 30 days if not specified
-    console.log('daysAMS', days)
-
-    // Calculate the date for filtering
-    const date = new Date(); // Fallback date if current date is invalid
-
-    date.setDate(date.getDate() - days);
-    console.log('dateAMS', date)
-    const filterDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    let fromDate: string;
+    let toDate: string;
+    
+    // Support both date range and days parameter for backward compatibility
+    if (req.query.fromDate && req.query.toDate) {
+        // Use date range parameters
+        fromDate = req.query.fromDate as string;
+        toDate = req.query.toDate as string;
+    } else {
+        // Fallback to days parameter
+        const days = req.query.days && !Number.isNaN(req.query.days) ? parseInt(req.query.days as string) : 30;
+        console.log('daysAMS', days);
+        
+        // Calculate the date for filtering
+        const date = new Date(); // Current date
+        const endDate = new Date(); // Current date for toDate
+        
+        date.setDate(date.getDate() - days);
+        console.log('dateAMS', date);
+        
+        fromDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        toDate = endDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    }
 
     const db = await openDb();
     const task = await db.all(`SELECT 
@@ -632,9 +646,9 @@ router.get('/graph', async (req, res) => {
     SUM(CASE WHEN done = 1 THEN 1 ELSE 0 END) AS completed_tasks,
     SUM(CASE WHEN procrastinated = 1 THEN 1 ELSE 0 END) AS not_completed_tasks
 FROM habit
-WHERE date >= ? 
+WHERE date >= ? AND date <= ? 
 GROUP BY 
-    taskName, date`, [filterDate]);
+    taskName, date`, [fromDate, toDate]);
 
     console.log(task);
     await db.close();
@@ -648,13 +662,14 @@ GROUP BY
 
 // Update a task
 router.put('/tasks/:id', async (req, res) => {
-    const { completed } = req.body;
+    const { completed, repeat } = req.body;
     const db = await openDb();
     await db.run(`
         UPDATE task SET  completed = ?
         WHERE id = ?`,
         [completed, req.params.id]
     );
+
     await db.close();
     res.json({ message: 'Task updated' });
 });
@@ -776,6 +791,24 @@ router.get('/points', async (req, res) => {
 
 router.get('/pointsGraph', async (req, res) => {
     try {
+        let fromDate: string;
+        let toDate: string;
+        
+        // Support date range parameters
+        if (req.query.fromDate && req.query.toDate) {
+            fromDate = req.query.fromDate as string;
+            toDate = req.query.toDate as string;
+        } else {
+            // Default to last 30 days if no date range provided
+            const date = new Date();
+            const endDate = new Date();
+            
+            date.setDate(date.getDate() - 30);
+            
+            fromDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            toDate = endDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        }
+        
         const db = await openDb();
 
         const results = await db.all(`
@@ -785,9 +818,10 @@ router.get('/pointsGraph', async (req, res) => {
                 SUM(CASE WHEN not_completed = 1  THEN weight ELSE 0 END) as notCompletedPoints,
                 SUM(weight) as totalPoints
             FROM task 
+            WHERE date >= ? AND date <= ?
             GROUP BY Date
             ORDER BY Date DESC
-        `);
+        `, [fromDate, toDate]);
 
         const habitResults = await db.all(`
             SELECT 
@@ -795,11 +829,12 @@ router.get('/pointsGraph', async (req, res) => {
                 SUM(CASE WHEN done = 1 THEN weight ELSE 0 END) as habitDonePoints,
                 SUM(CASE WHEN procrastinated = 1 THEN weight ELSE 0 END) as habitProcrastinatedPoints
             FROM habit
+            WHERE date >= ? AND date <= ?
             GROUP BY date
             ORDER BY date DESC
-        `);
+        `, [fromDate, toDate]);
 
-const totalPointsHabits = await db.all(`
+        const totalPointsHabits = await db.all(`
   SELECT weight as total, date 
   FROM task 
   WHERE LOWER(title) LIKE '%i get to do it%' COLLATE NOCASE 
@@ -811,11 +846,11 @@ const totalPointsHabits = await db.all(`
                 habitDonePoints: 0,
                 habitProcrastinatedPoints: 0
             };
-    
-    // Find habit points for dates equal to or greater than the task date
-    const relevantHabitPoints = totalPointsHabits
-        .filter(h => h.date <= taskDay.date)
-        .reduce((sum, item) => sum + (item.total || 0), 0);
+
+            // Find habit points for dates equal to or greater than the task date
+            const relevantHabitPoints = totalPointsHabits
+                .filter(h => h.date <= taskDay.date)
+                .reduce((sum, item) => sum + (item.total || 0), 0);
             return {
                 date: taskDay.date,
                 completedPoints: taskDay.completedPoints || 0,

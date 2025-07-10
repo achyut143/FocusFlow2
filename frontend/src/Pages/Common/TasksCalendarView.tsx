@@ -24,6 +24,7 @@ import Replay5Icon from '@mui/icons-material/Replay5';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import CheckIcon from '@mui/icons-material/Check';
 import NoteIcon from '@mui/icons-material/Note';
+import LoopIcon from '@mui/icons-material/Loop';
 import { format } from "date-fns";
 import { portUrl, InternationaltimeZone } from "../../AppConfiguration";
 import WYSIWYGEditor from "./WYSIWYGEditor";
@@ -45,6 +46,7 @@ export interface Task {
     notes: string | null;
     habitId: number;
     date?: Date;
+    repeat_again: number | null;
 }
 
 interface TasksCalendarViewProps {
@@ -167,7 +169,7 @@ const TimeSlot = styled(Box)<{ isCurrentTime?: boolean }>(({ theme, isCurrentTim
     // padding: theme.spacing(0.5),
     position: "relative",
     padding: "0px",
-    height: "60px",
+    height: "30px",
     backgroundColor: isCurrentTime ? theme.palette.primary.light + "20" : "transparent",
     transition: "background-color 0.3s ease",
     '&:hover': {
@@ -412,9 +414,11 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
         try {
             await axios.put(`${portUrl}/tasks/tasks/${task.id}`, {
                 completed: !completed,
+
             });
 
             if (routine) {
+
                 await axios.post(`${portUrl}/habits/habits`, {
                     taskName: task.title,
                     done: !completed,
@@ -422,6 +426,10 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                     weight: task.weight,
                     date: date ? date : format(new Date(), 'yyyy-MM-dd')
                 });
+
+                createNext(task);
+
+
             }
 
             // Provide audio feedback using text-to-speech
@@ -440,6 +448,40 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
         }
     };
 
+    const createNext = async (task: any) => {
+        // const nextOccurence = calculateNextOccurrence(task.repeat_again!)
+
+        const today = new Date(task.date);
+        today.setDate(today.getDate() + task.repeat_again!);
+
+
+        const nextOccurence = today.toISOString().split('T')[0];
+
+        //insert
+        await axios.post(`${portUrl}/tasks/tasks`, {
+            title: task.title,
+            description: task.description,
+            start_time: task.start_time,
+            end_time: task.end_time,
+            completed: false,
+            category_id: 1, // Modify as needed
+            weight: task.weight,
+            date: nextOccurence,
+            ...(task.repeat_again && { repeat: task.repeat_again })
+        });
+    }
+
+    const calculateNextOccurrence = (next: number): string => {
+        const today = new Date();
+
+
+        today.setDate(today.getDate() + next);
+
+
+        return today.toISOString().split('T')[0]; // Return date in YYYY-MM-DD format
+    };
+
+
     const handleTaskNonCompletion = async (task: Task, not_completed: boolean, routine: boolean) => {
         try {
             await axios.put(`${portUrl}/tasks/tasksNotCompleted/${task.id}`, {
@@ -454,6 +496,8 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                     weight: task.weight,
                     date: date ? date : format(new Date(), 'yyyy-MM-dd')
                 });
+
+                createNext(task);
             }
 
             // Provide audio feedback using text-to-speech
@@ -507,8 +551,8 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
         try {
             if (title.toLowerCase().includes("i get to do it")) {
                 await axios.delete(`${portUrl}/tasks/tasks/${taskId}`);
-                await axios.post(`${portUrl}/tasks/deletehabitTask`,{
-                    title:title
+                await axios.post(`${portUrl}/tasks/deletehabitTask`, {
+                    title: title
                 });
             } else {
                 await axios.delete(`${portUrl}/tasks/tasks/${taskId}`);
@@ -677,7 +721,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
     // Generate time slots for the day (24 hours with 15-minute intervals)
     const timeSlots = [];
     for (let hour = 0; hour < 24; hour++) {
-        for (let minute = 0; minute < 60; minute += 15) {
+        for (let minute = 0; minute < 60; minute += 5) {
             timeSlots.push({ hour, minute });
         }
     }
@@ -687,7 +731,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
         // Ensure we have valid time strings
         if (!task.start_time || !task.end_time) {
             console.error('Invalid task times:', task);
-            return { top: '0px', height: '60px', width: 'calc(100% - 70px)', left: '60px', zIndex: 10 };
+            return { top: '0px', height: '30px', width: 'calc(100% - 70px)', left: '60px', zIndex: 10 };
         }
 
         const startMinutes = timeToMinutes(task.start_time);
@@ -740,21 +784,14 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
 
         // Calculate exact position based on 15-minute intervals
         // Each 15-minute interval is 60px tall
-        const slotHeight = 60; // height of each 15-minute slot
-        const slotIndex = Math.floor(startMinutes / 15);
+        const slotHeight = 30; // height of each 15-minute slot
+        const slotIndex = Math.floor(startMinutes / 5);
 
-        console.log(task.title, slotIndex, {
-            top: `${slotIndex * slotHeight}px`,
-            height: `${Math.max(1, Math.ceil(duration / 15)) * slotHeight}px`,
-            width: taskWidth,
-            left: leftPosition,
-            zIndex: position + 10, // Dynamic z-index based on position
-        })
 
 
         return {
             top: `${slotIndex * slotHeight}px`,
-            height: `${Math.max(1, Math.ceil(duration / 15)) * slotHeight}px`,
+            height: `${Math.max(1, Math.ceil(duration / 5)) * slotHeight}px`,
             width: taskWidth,
             left: leftPosition,
             zIndex: position + 10, // Dynamic z-index based on position
@@ -886,7 +923,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                         right: 0,
                         borderTop: '2px solid #f44336',
                         zIndex: 5,
-                        top: `${(currentTime.getHours() * 60 + currentTime.getMinutes()) / 15 * 60}px`,
+                        top: `${(currentTime.getHours() * 60 + currentTime.getMinutes()) / 5 * 30}px`,
                     }}
                 />
                 <div className="calendar-day-view">
@@ -914,7 +951,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                     {filteredTasks.map((task) => {
                         const style = positionTask(task);
                         const current = isCurrentTask(task.start_time, task.end_time);
-                        const routine = task.title.toLowerCase().includes("i get to do it");
+                        const routine = task.title.toLowerCase().includes("i get to do it") || task.repeat_again ? true : false;
 
                         return (
                             <TaskItem
@@ -929,57 +966,186 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                                 title={`${task.title} (${task.start_time} - ${task.end_time})`}
                             >
                                 <Typography variant="subtitle2" sx={{ fontWeight: 'bold', fontSize: '0.85rem', lineHeight: 1.2 }}>
-                                    {task.title} ({task.weight})
-                                    <TaskActions sx={{ flexShrink: 0, display: 'inline-flex', ml: 1 }}>
-                                        <ActionButton
-                                            size="small"
-                                            onClick={() => handleTaskCompletion(task, task.completed, routine)}
-                                            color={task.completed ? "success" : "default"}
-                                        >
-                                            <CheckIcon fontSize="small" />
-                                        </ActionButton>
-                                        <ActionButton
-                                            size="small"
-                                            onClick={() => handleTaskNonCompletion(task, task.not_completed, routine)}
-                                            color={task.not_completed ? "error" : "default"}
-                                        >
-                                            <CloseIcon fontSize="small" />
-                                        </ActionButton>
-                                        {/* <ActionButton
-                                            size="small"
-                                            onClick={() => handle5minCompletion(task, task.five, routine)}
-                                            color={task.five ? "info" : "default"}
-                                        >
-                                            <Replay5Icon fontSize="small" />
-                                        </ActionButton> */}
-                                        <ActionButton
-                                            size="small"
-                                            onClick={() => {
-                                                setEditingTask(task);
-                                                setEditedTitle(`${task.start_time} - ${task.end_time} - ${task.title} - ${task.description} - ${task.weight}`);
-                                                setEditDialogOpen(true);
-                                            }}
-                                        >
-                                            <ModeEditIcon fontSize="small" />
-                                        </ActionButton>
-                                        <ActionButton
-                                            size="small"
-                                            onClick={() => handleDeleteTask(task.id, task.title)}
-                                            color="error"
-                                        >
-                                            <DeleteForeverIcon fontSize="small" />
-                                        </ActionButton>
-                                        <ActionButton
-                                            size="small"
-                                            onClick={() => setOpenWYS(task.id)}
-                                            color={task.notes ? "secondary" : "default"}
-                                        >
-                                            <NoteIcon fontSize="small" color={task.notes ? "secondary" : "action"} />
-                                        </ActionButton>
-                                    </TaskActions>
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        gap: '6px',
+                                        maxWidth: '100%',
+                                        padding: '4px'
+                                    }}>
+                                        <Box sx={{
+                                            display: 'flex',
+                                            flexWrap: 'wrap',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            flexGrow: 1
+                                        }}>
+                                            {/* Task Title */}
+                                            <Box sx={{
+                                                backgroundColor: 'rgba(255,255,255,0.9)',
+                                                borderRadius: '8px',
+                                                padding: '4px 10px',
+                                                border: '2px solid #6a9eda',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+                                                maxWidth: '100%',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                                color: '#2c3e50'
+                                            }}>
+                                                {task.title}
+                                            </Box>
+
+                                            {/* Weight Indicator */}
+                                            <Box sx={{
+                                                backgroundColor: task.weight > 7 ? '#ff7675' :
+                                                    task.weight > 4 ? '#fdcb6e' : '#74b9ff',
+                                                color: task.weight > 7 ? '#fff' :
+                                                    task.weight > 4 ? '#7d5a00' : '#fff',
+                                                fontWeight: 'bold',
+                                                borderRadius: '50%',
+                                                width: '24px',
+                                                height: '24px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                border: '2px solid #fff',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                                fontSize: '0.75rem',
+                                                flexShrink: 0
+                                            }}>
+                                                {task.weight}
+                                            </Box>
+
+                                            {/* Time Range */}
+                                            <Box sx={{
+                                                backgroundColor: 'rgba(116,185,255,0.2)',
+                                                color: '#2980b9',
+                                                borderRadius: '20px',
+                                                padding: '2px 10px',
+                                                border: '1px solid rgba(116,185,255,0.5)',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 'medium',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                flexShrink: 0,
+                                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                            }}>
+                                                {task.start_time} - {task.end_time}
+                                            </Box>
+
+                                            {/* Repeat Indicator */}
+                                            {task.repeat_again && (
+                                                <Box sx={{
+                                                    backgroundColor: 'rgba(46,213,115,0.2)',
+                                                    color: '#2ed573',
+                                                    borderRadius: '50%',
+                                                    width: '28px',
+                                                    height: '28px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    border: '1px solid rgba(46,213,115,0.5)',
+                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                                    position: 'relative',
+                                                    flexShrink: 0
+                                                }}>
+                                                    <LoopIcon fontSize="small" />
+                                                    <Typography
+                                                        variant="caption"
+                                                        sx={{
+                                                            position: 'absolute',
+                                                            bottom: '-8px',
+                                                            right: '-8px',
+                                                            backgroundColor: '#2ed573',
+                                                            color: 'white',
+                                                            borderRadius: '50%',
+                                                            width: '16px',
+                                                            height: '16px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: '0.6rem',
+                                                            fontWeight: 'bold',
+                                                            border: '1px solid white'
+                                                        }}
+                                                    >
+                                                        {task.repeat_again}
+                                                    </Typography>
+                                                </Box>
+                                            )}
+
+                                            {/* Description (if available) */}
+                                            {task.description && (
+                                                <Box sx={{
+                                                    backgroundColor: 'rgba(241,242,246,0.9)',
+                                                    color: '#636e72',
+                                                    borderRadius: '8px',
+                                                    padding: '3px 8px',
+                                                    border: '1px solid #dfe6e9',
+                                                    fontStyle: 'italic',
+                                                    maxWidth: '100%',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    fontSize: '0.75rem'
+                                                }}>
+                                                    {task.description}
+                                                </Box>
+                                            )}
+                                        </Box>
+
+                                        <Box sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '2px',
+                                            flexShrink: 0
+                                        }}>
+                                            <ActionButton
+                                                size="small"
+                                                onClick={() => handleTaskCompletion(task, task.completed, routine)}
+                                                color={task.completed ? "success" : "default"}
+                                            >
+                                                <CheckIcon fontSize="small" />
+                                            </ActionButton>
+                                            <ActionButton
+                                                size="small"
+                                                onClick={() => handleTaskNonCompletion(task, task.not_completed, routine)}
+                                                color={task.not_completed ? "error" : "default"}
+                                            >
+                                                <CloseIcon fontSize="small" />
+                                            </ActionButton>
+                                            <ActionButton
+                                                size="small"
+                                                onClick={() => {
+                                                    setEditingTask(task);
+                                                    setEditedTitle(`${task.start_time} - ${task.end_time} - ${task.title} - ${task.description} - ${task.weight}`);
+                                                    setEditDialogOpen(true);
+                                                }}
+                                            >
+                                                <ModeEditIcon fontSize="small" />
+                                            </ActionButton>
+                                            <ActionButton
+                                                size="small"
+                                                onClick={() => handleDeleteTask(task.id, task.title)}
+                                                color="error"
+                                            >
+                                                <DeleteForeverIcon fontSize="small" />
+                                            </ActionButton>
+                                            <ActionButton
+                                                size="small"
+                                                onClick={() => setOpenWYS(task.id)}
+                                                color={task.notes ? "secondary" : "default"}
+                                            >
+                                                <NoteIcon fontSize="small" color={task.notes ? "secondary" : "action"} />
+                                            </ActionButton>
+                                        </Box>
+                                    </Box>
                                 </Typography>
-                                <Typography variant="caption" sx={{ mb: 0.5, fontSize: '0.7rem', lineHeight: 1.1, display: 'block' }}>
-                                    {task.start_time} - {task.end_time}
+                                <Typography variant="subtitle2" sx={{ mb: 0.5, fontSize: '0.75rem', lineHeight: 1.2, mt: 0.5 }}>
+
                                 </Typography>
                                 {current && (
                                     <Typography variant="caption" sx={{
@@ -998,63 +1164,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                                         {getTimeRemaining(task.end_time)}
                                     </Typography>
                                 )}
-                                <Box sx={{ position: 'relative', mb: 0.5, flexGrow: 1, maxHeight: expandedTasks.includes(task.id) ? 'none' : '24px', overflow: expandedTasks.includes(task.id) ? 'visible' : 'hidden', minHeight: '16px' }}>
-                                    <Typography variant="body2" sx={{ wordBreak: 'break-word', fontSize: '0.75rem', lineHeight: 1.2 }}>
-                                        {task.description}
-                                    </Typography>
-                                    {!expandedTasks.includes(task.id) && task.description && (
-                                        <Box sx={{
-                                            position: 'absolute',
-                                            bottom: 0,
-                                            left: 0,
-                                            right: 0,
-                                            height: '16px',
-                                            background: 'linear-gradient(transparent, rgba(255,255,255,0.9))',
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                            alignItems: 'flex-end',
-                                            zIndex: 10
-                                        }}>
-                                            <Button
-                                                size="small"
-                                                onClick={() => setExpandedTasks(prev => [...prev, task.id])}
-                                                sx={{
-                                                    minWidth: '30px',
-                                                    height: '16px',
-                                                    lineHeight: '16px',
-                                                    py: 0,
-                                                    px: 0.5,
-                                                    fontSize: '0.65rem',
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 1)' }
-                                                }}
-                                            >
-                                                More
-                                            </Button>
-                                        </Box>
-                                    )}
-                                    {expandedTasks.includes(task.id) && task.description && (
-                                        <Button
-                                            size="small"
-                                            onClick={() => setExpandedTasks(prev => prev.filter(id => id !== task.id))}
-                                            sx={{
-                                                display: 'block',
-                                                mt: 0.5,
-                                                minWidth: '30px',
-                                                height: '16px',
-                                                lineHeight: '16px',
-                                                py: 0,
-                                                px: 0.5,
-                                                fontSize: '0.65rem',
-                                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 1)' },
-                                                zIndex: 10
-                                            }}
-                                        >
-                                            Less
-                                        </Button>
-                                    )}
-                                </Box>
+
 
                                 {openWYS === task.id &&
                                     <WYSIWYGEditor

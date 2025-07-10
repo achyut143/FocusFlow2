@@ -40,7 +40,7 @@ const Entry: React.FC = () => {
   // State variables for task input and configurations
   const [value, setValue] = useState("");
   const [slotValue, setSlotValue] = useState(25);
-  const [restValue, setRestValue] = useState(1);
+  const [repeatAgain, setRepeatAgain] = useState(0);
   const [timeValue, setTimeValue] = useState(() => {
     const now = new Date();
     return now.toLocaleString("en-US", {
@@ -67,21 +67,21 @@ const [date, setDate] = useState(() => {
   const [openTable, setOpenTable] = useState(true);
 
   // Function to create time for remaining habits
-  const AutoCreate = async () => {
-    try {
-      setRefresh(false);
-      await axios.post(`${portUrl}/tasks/createTimeForRemainingHabits`, {
-        slot: slotValue,
-        rest: restValue,
-        time: timeValue,
-      });
-      setRefresh(true);
-      setValue("");
-    } catch (error) {
-      setRefresh(true);
-      console.error("Error creating time for habits:", error);
-    }
-  };
+  // const AutoCreate = async () => {
+  //   try {
+  //     setRefresh(false);
+  //     await axios.post(`${portUrl}/tasks/createTimeForRemainingHabits`, {
+  //       slot: slotValue,
+  //       rest: restValue,
+  //       time: timeValue,
+  //     });
+  //     setRefresh(true);
+  //     setValue("");
+  //   } catch (error) {
+  //     setRefresh(true);
+  //     console.error("Error creating time for habits:", error);
+  //   }
+  // };
 
   // Function to load reminders
   const LoadReminders = async () => {
@@ -150,14 +150,17 @@ const [date, setDate] = useState(() => {
             completed: false,
             category_id: 1, // Modify as needed
             weight: weight ? weight : 1,
-            date:date
+            date:date,
+            ...(repeatAgain && {repeat: repeatAgain})
           });
           setRefresh(true);
+          
           setValue("");
         } catch (error) {
           console.error("Error creating task:", error);
         } finally {
           setRefresh(true);
+          setRepeatAgain(0)
           setValue("");
         }
       } else {
@@ -210,29 +213,29 @@ const [date, setDate] = useState(() => {
         </Box>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-          <TextField
+          {/* <TextField
             label="Slot Duration"
             type="number"
             value={slotValue}
             onChange={(e) => setSlotValue(parseInt(e.target.value))}
             variant="outlined"
             size="small"
-          />
+          /> */}
           <TextField
-            label="Rest Period"
+            label="Repeat Every _ days"
             type="number"
-            value={restValue}
-            onChange={(e) => setRestValue(parseInt(e.target.value))}
+            value={repeatAgain}
+            onChange={(e) => setRepeatAgain(parseInt(e.target.value))}
             variant="outlined"
             size="small"
           />
-          <TextField
+          {/* <TextField
             label="Start Time"
             variant="outlined"
             value={timeValue}
             onChange={(e) => setTimeValue(e.target.value)}
             size="small"
-          />
+          /> */}
           <TextField
             type="date"
             label="Date"
@@ -244,7 +247,7 @@ const [date, setDate] = useState(() => {
           />
         </Box>
 
-        <div className="button-group">
+        {/* <div className="button-group">
           <ActionButton 
             variant="outlined" 
             onClick={() => setOpenTable(prev => !prev)}
@@ -275,7 +278,7 @@ const [date, setDate] = useState(() => {
           >
             Auto Reassign
           </ActionButton>
-        </div>
+        </div> */}
       </StyledPaper>
 
       {/* <div className="content-area"> */}

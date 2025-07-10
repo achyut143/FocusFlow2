@@ -13,11 +13,12 @@ interface HabitDay {
 
 interface HabitCalendarProps {
   habitData: HabitDay[];
-  noOfDays: number;
+  fromDate: Date;
+  toDate: Date;
   setPercentage: React.Dispatch<React.SetStateAction<number>>;
 }
 
-const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays, setPercentage }) => {
+const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDate, setPercentage }) => {
   const [selectedHabit, setSelectedHabit] = useState<string>('');
 
   const habitNames = Array.from(new Set(habitData.map(habit => habit.taskName)));
@@ -31,9 +32,21 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays, setP
     }
   }, [habitNames, selectedHabit]);
 
-  const last30Days = Array.from({ length: noOfDays }, (_, i) => {
-    return startOfDay(subDays(new Date(), noOfDays - i - 1));
-  });
+  // Generate array of dates between fromDate and toDate
+  const getDatesInRange = (start: Date, end: Date) => {
+    const dates = [];
+    let currentDate = startOfDay(start);
+    const lastDate = startOfDay(end);
+
+    while (currentDate <= lastDate) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return dates;
+  };
+
+  const dateRange = getDatesInRange(fromDate, toDate);
 
   const getStatusForDay = (date: Date, habit: string = selectedHabit) => {
     // Find habit data for the selected habit and date
@@ -53,7 +66,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays, setP
     let notCompletedCount = 0;
     let noDataCount = 0;
 
-    last30Days.forEach(date => {
+    dateRange.forEach(date => {
       const status = getStatusForDay(date, habitName);
       if (status === 'completed') {
         completedCount++;
@@ -123,7 +136,8 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays, setP
               key={habitName}
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  {habitName.slice(0, -16)}
+                  {habitName.replace("(I get to do it)", "")}
+               
                   <Box
                     sx={{
                       ml: 1,
@@ -153,7 +167,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays, setP
         gap: 1,
         mb: 2
       }}>
-        {last30Days.map((date) => (
+        {dateRange.map((date) => (
           <Tooltip
             key={date.toISOString()}
             title={getTooltipText(date)}
@@ -255,7 +269,8 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, noOfDays, setP
 const Dashboard: React.FC = () => {
   const [habitData, setHabitData] = useState<HabitDay[]>([]);
   const [loading, setLoading] = useState(true);
-  const [noOfDays, setNoOfDays] = useState(30);
+  const [fromDate, setFromDate] = useState<Date>(subDays(new Date(), 30));
+  const [toDate, setToDate] = useState<Date>(new Date());
   const [percentage, setPercentage] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredHabitData, setFilteredHabitData] = useState<HabitDay[]>([]);
@@ -263,7 +278,9 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchHabitData = async () => {
       try {
-        const response = await fetch(`${portUrl}/tasks/graph?days=${noOfDays}`);
+        const fromDateStr = format(fromDate, 'yyyy-MM-dd');
+        const toDateStr = format(toDate, 'yyyy-MM-dd');
+        const response = await fetch(`${portUrl}/tasks/graph?fromDate=${fromDateStr}&toDate=${toDateStr}`);
         const data = await response.json();
         setHabitData(data);
         setFilteredHabitData(data);
@@ -275,7 +292,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchHabitData();
-  }, [noOfDays]);
+  }, [fromDate, toDate]);
 
   useEffect(() => {
     if (searchTerm.trim() === '') {
@@ -296,15 +313,23 @@ const Dashboard: React.FC = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
         <TextField
-          id="outlined-number"
-          label="No of Days"
-          type="number"
-          value={noOfDays}
-          onChange={(e) => setNoOfDays(parseInt(e.target.value))}
-          slotProps={{
-            inputLabel: {
-              shrink: true,
-            },
+          id="date-from"
+          label="From Date"
+          type="date"
+          value={format(fromDate, 'yyyy-MM-dd')}
+          onChange={(e) => setFromDate(parseISO(e.target.value))}
+          InputLabelProps={{
+            shrink: true,
+          }}
+        />
+        <TextField
+          id="date-to"
+          label="To Date"
+          type="date"
+          value={format(toDate, 'yyyy-MM-dd')}
+          onChange={(e) => setToDate(parseISO(e.target.value))}
+          InputLabelProps={{
+            shrink: true,
           }}
         />
         <TextField
@@ -314,10 +339,11 @@ const Dashboard: React.FC = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{
- width: '300px' }}
+            width: '300px'
+          }}
         />
       </Box>
-      <HabitCalendar habitData={filteredHabitData} noOfDays={noOfDays} setPercentage={setPercentage} />
+      <HabitCalendar habitData={filteredHabitData} fromDate={fromDate} toDate={toDate} setPercentage={setPercentage} />
       <Typography variant="h6" sx={{ mt: 2 }}>
         Completion Percentage: {percentage.toFixed(2)}%
       </Typography>

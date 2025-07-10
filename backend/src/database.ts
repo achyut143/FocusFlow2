@@ -11,6 +11,12 @@ const initDatabase = async () => {
   const createTables = false
   const createNotesTable = false
   const deleteAHabit = true
+  const custom = false
+
+  if(custom){
+    await db.exec(`ALTER TABLE task
+ADD COLUMN repeat_again INT;`);
+  }
 
   const insertCategory = async (name: string, target: number) => {
     const sql = `INSERT INTO category (name, target) VALUES (?, ?)`; // Adjust table name and columns as needed
@@ -19,7 +25,9 @@ const initDatabase = async () => {
   };
 
   if(deleteAHabit){
-    await db.exec(`DELETE FROM habit where taskName LIKE 'prepare%'`)
+    // await db.exec(`DELETE FROM habit where taskName LIKE 'test'`)
+    await db.exec(`DELETE FROM task where title LIKE 'test'`)
+    
 
   }
 

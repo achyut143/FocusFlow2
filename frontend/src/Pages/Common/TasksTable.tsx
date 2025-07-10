@@ -58,6 +58,7 @@ export interface Task {
   notes: string | null;
   habitId: number;
   date?: Date;
+  repeat_again:number| null;
 }
 
 // Add interfaces for type safety
