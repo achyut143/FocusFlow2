@@ -700,7 +700,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
     }
   };
 
-  const [openWYS, setOpenWYS] = useState<number | null>(null)
+  const [openWYS, setOpenWYS] = useState<string | null>(null)
 
 
   const renderDescription = (description: string) => {
@@ -1152,7 +1152,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
                       </StyledTableCell>
                       <StyledTableCell>
                         <Button
-                          onClick={() => setOpenWYS(task.id)}
+                          onClick={() => setOpenWYS(`${task.id}-${task.date}`)}
                           variant={task.notes ? "contained" : "outlined"}
                           color={task.notes ? "primary" : "inherit"}
                           sx={{
@@ -1179,7 +1179,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
                             {cleanContent(task.notes)}
                           </Typography>
                         )}
-                        {openWYS === task.id && <WYSIWYGEditor key={task.id} taskId={task.id} notes={task.notes} habit={Routine} date={date} Task={task} setTasks={setTasks} open={openWYS ? true : false} onClose={() => setOpenWYS(null)}
+                        {openWYS === `${task.id}-${task.date}` && <WYSIWYGEditor key={task.id} taskId={task.id} notes={task.notes} habit={Routine} date={date} Task={task} setTasks={setTasks} open={openWYS ? true : false} onClose={() => setOpenWYS(null)}
 
                         />}</StyledTableCell>
                     </RowComponent>

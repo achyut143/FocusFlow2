@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Paper, Typography, Box, Tooltip, Tab, Tabs, TextField } from '@mui/material';
+import { Paper, Typography, Box, Tooltip, Tab, Tabs, TextField, Button, IconButton } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import axios from 'axios';
 import { format, subDays, isSameDay, parseISO, startOfDay } from 'date-fns';
 import { portUrl } from '../AppConfiguration';
 
@@ -20,6 +22,19 @@ interface HabitCalendarProps {
 
 const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDate, setPercentage }) => {
   const [selectedHabit, setSelectedHabit] = useState<string>('');
+
+  const handleDeleteHabit = async (title: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent tab selection when clicking delete
+    if (window.confirm(`Are you sure you want to delete habit "${title}"?`)) {
+      try {
+        await axios.post(`${portUrl}/tasks/deletehabitTask`, { title: title });
+        // Refresh the page to show updated data
+        window.location.reload();
+      } catch (error) {
+        console.error('Error deleting habit:', error);
+      }
+    }
+  };
 
   const habitNames = Array.from(new Set(habitData.map(habit => habit.taskName)));
 
@@ -137,7 +152,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDa
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   {habitName.replace("(I get to do it)", "")}
-               
+
                   <Box
                     sx={{
                       ml: 1,
@@ -153,6 +168,13 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDa
                   >
                     {stats.completedCount}/{totalDays} ({Math.round(stats.percentage)}%)
                   </Box>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleDeleteHabit(habitName, e)}
+                    sx={{ ml: 1, p: 0.5 }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                 </Box>
               }
               value={habitName}

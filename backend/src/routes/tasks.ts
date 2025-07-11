@@ -1,4 +1,6 @@
-import express, { Request, Response, Router } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
+const { Router } = express;
 import { openDb } from '../index';
 import { InternationaltimeZone } from '../AppConfiguration';
 
@@ -18,7 +20,7 @@ const convertTo12Hour = (time24: string, addMinutes: number = 0) => {
         timeZone: InternationaltimeZone,
     });
 }
-router.post('/remindersToTasks', async (req, res) => {
+router.post('/remindersToTasks', async (req: Request, res: Response) => {
     const request = req.body;
     const db = await openDb();
     try {
@@ -91,41 +93,51 @@ router.post('/remindersToTasks', async (req, res) => {
     }
 });
 
-router.post('/tasks', async (req, res) => {
+router.post('/tasks', async (req: Request, res: Response) => {
     const { title, description, start_time, end_time, completed, category_id, weight, date, repeat } = req.body;
     const db = await openDb();
 
     try {
-        let dateValue;
+        // Check for existing task with same title and time on the same date
+        const existingTask = await db.get(
+            `SELECT id FROM task 
+             WHERE title = ? AND start_time = ? AND date = ? AND deletedAt IS NULL`,
+            [title, start_time, date]
+        );
+
+        // If duplicate exists, return early with a message
+        if (existingTask) {
+            await db.close();
+            res.status(201).json({ id: 'Task already exists' });
+            // return res.status(200).json({
+            //     message: 'Task already exists',
+            //     id: existingTask.id,
+            //     duplicate: true
+            // });
+        }
+
+        let dateValue = date;
 
         // Check if title contains "I get to do it"
         if (title.toLowerCase().includes('i get to do it')) {
-            // Set date to last year's date
-            const lastYear = new Date();
-            lastYear.setFullYear(lastYear.getFullYear() - 1);
-            dateValue = date//lastYear.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+            // Set date to provided date (previously was setting to last year)
             const result = await db.run(`
                 INSERT INTO task (title, description, start_time, end_time, completed, category_id, date, weight) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [title, description, start_time, end_time, completed, category_id, dateValue, weight]
             );
             await db.close();
-            res.status(201).json({ id: result.lastID });;
+            res.status(201).json({ id: result.lastID });
         } else {
-            // Use current date
+            // Use provided date
             const result = await db.run(`
-                INSERT INTO task (title, description, start_time, end_time, completed, category_id, date, weight,repeat_again) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)`,
+                INSERT INTO task (title, description, start_time, end_time, completed, category_id, date, weight, repeat_again) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [title, description, start_time, end_time, completed, category_id, date, weight, repeat]
             );
             await db.close();
-            res.status(201).json({ id: result.lastID });;
-
+            res.status(201).json({ id: result.lastID });
         }
-
-
-
-
     } catch (error) {
         console.error('Error creating task:', error);
         await db?.close();
@@ -601,7 +613,7 @@ router.post('/gettasks', async (req: Request, res: Response) => {
 
 
 // Read a single task by ID
-router.get('/tasks/:id', async (req, res) => {
+router.get('/tasks/:id', async (req: Request, res: Response) => {
     const db = await openDb();
     const task = await db.get('SELECT * FROM task WHERE id = ?', [req.params.id]);
     await db.close();
@@ -613,10 +625,10 @@ router.get('/tasks/:id', async (req, res) => {
 });
 
 
-router.get('/graph', async (req, res) => {
+router.get('/graph', async (req: Request, res: Response) => {
     let fromDate: string;
     let toDate: string;
-    
+
     // Support both date range and days parameter for backward compatibility
     if (req.query.fromDate && req.query.toDate) {
         // Use date range parameters
@@ -626,14 +638,14 @@ router.get('/graph', async (req, res) => {
         // Fallback to days parameter
         const days = req.query.days && !Number.isNaN(req.query.days) ? parseInt(req.query.days as string) : 30;
         console.log('daysAMS', days);
-        
+
         // Calculate the date for filtering
         const date = new Date(); // Current date
         const endDate = new Date(); // Current date for toDate
-        
+
         date.setDate(date.getDate() - days);
         console.log('dateAMS', date);
-        
+
         fromDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
         toDate = endDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
     }
@@ -661,7 +673,7 @@ GROUP BY
 
 
 // Update a task
-router.put('/tasks/:id', async (req, res) => {
+router.put('/tasks/:id', async (req: Request, res: Response) => {
     const { completed, repeat } = req.body;
     const db = await openDb();
     await db.run(`
@@ -675,7 +687,7 @@ router.put('/tasks/:id', async (req, res) => {
 });
 
 // Update a task
-router.put('/reassign/:id', async (req, res) => {
+router.put('/reassign/:id', async (req: Request, res: Response) => {
     const { reassign } = req.body;
     const db = await openDb();
     await db.run(`
@@ -688,7 +700,7 @@ router.put('/reassign/:id', async (req, res) => {
 });
 
 // Update a  task to not completed
-router.put('/tasksNotCompleted/:id', async (req, res) => {
+router.put('/tasksNotCompleted/:id', async (req: Request, res: Response) => {
     const { not_completed } = req.body;
     const db = await openDb();
     await db.run(`
@@ -701,7 +713,7 @@ router.put('/tasksNotCompleted/:id', async (req, res) => {
 });
 
 // Update a  task to five minutes done
-router.put('/fiveCompleted/:id', async (req, res) => {
+router.put('/fiveCompleted/:id', async (req: Request, res: Response) => {
     const { five } = req.body;
     const db = await openDb();
     await db.run(`
@@ -716,7 +728,7 @@ router.put('/fiveCompleted/:id', async (req, res) => {
 
 // Update whole task
 //title, description, start_time, end_time,category
-router.put('/tasksUpdate/:id', async (req, res) => {
+router.put('/tasksUpdate/:id', async (req: Request, res: Response) => {
     const { title, description, start_time, end_time, weight, category } = req.body;
     const db = await openDb();
     await db.run(`
@@ -729,7 +741,7 @@ router.put('/tasksUpdate/:id', async (req, res) => {
 });
 
 // Update a task
-// router.put('/tasks/:id', async (req, res) => {
+// router.put('/tasks/:id', async (req: Request, res: Response) => {
 //     const { title, description, start_time, end_time, completed, category_id } = req.body;
 //     const db = await openDb();
 //     await db.run(`
@@ -742,7 +754,7 @@ router.put('/tasksUpdate/:id', async (req, res) => {
 // });
 
 // Delete a task
-router.delete('/tasks/:id', async (req, res) => {
+router.delete('/tasks/:id', async (req: Request, res: Response) => {
     const db = await openDb();
     await db.run('UPDATE task SET deletedAt = DATE("now") WHERE id = ?', [req.params.id]);
     await db.close();
@@ -751,14 +763,14 @@ router.delete('/tasks/:id', async (req, res) => {
 
 
 
-router.delete('/deleteForever/:id', async (req, res) => {
+router.delete('/deleteForever/:id', async (req: Request, res: Response) => {
     const db = await openDb();
     await db.run('DELETE FROM task  WHERE id = ?', [req.params.id]);
     await db.close();
     res.json({ message: 'Task deleted' });
 });
 
-router.get('/points', async (req, res) => {
+router.get('/points', async (req: Request, res: Response) => {
     try {
         const db = await openDb();
         // Fix the SQL queries by adding proper FROM clause and table name
@@ -789,11 +801,11 @@ router.get('/points', async (req, res) => {
     }
 });
 
-router.get('/pointsGraph', async (req, res) => {
+router.get('/pointsGraph', async (req: Request, res: Response) => {
     try {
         let fromDate: string;
         let toDate: string;
-        
+
         // Support date range parameters
         if (req.query.fromDate && req.query.toDate) {
             fromDate = req.query.fromDate as string;
@@ -802,13 +814,13 @@ router.get('/pointsGraph', async (req, res) => {
             // Default to last 30 days if no date range provided
             const date = new Date();
             const endDate = new Date();
-            
+
             date.setDate(date.getDate() - 30);
-            
+
             fromDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
             toDate = endDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
         }
-        
+
         const db = await openDb();
 
         const results = await db.all(`
