@@ -496,6 +496,11 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
 
         await axios.post(`${portUrl}/habits/habits`, { taskName: Task.title, done: !completed, procrastinated: 0, weight: Task.weight, date: date ? date : format(new Date(), 'yyyy-MM-dd') })
 
+        if (Task.repeat_again) {
+
+          createNext(Task);
+      }
+
       }
 
       // Provide audio feedback using text-to-speech
@@ -526,6 +531,12 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
 
         await axios.post(`${portUrl}/habits/habits`, { taskName: Task.title, done: 0, procrastinated: !not_completed, weight: Task.weight, date: date ? date : format(new Date(), 'yyyy-MM-dd') })
 
+        if (Task.repeat_again) {
+
+          createNext(Task);
+      }
+
+
       }
 
       // Provide audio feedback using text-to-speech
@@ -544,6 +555,30 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
       // Optionally show error message to user
     }
   };
+
+
+  const createNext = async (task: any) => {
+    // const nextOccurence = calculateNextOccurrence(task.repeat_again!)
+
+    const today = new Date(task.date);
+    today.setDate(today.getDate() + task.repeat_again!);
+
+
+    const nextOccurence = today.toISOString().split('T')[0];
+
+    //insert
+    await axios.post(`${portUrl}/tasks/tasks`, {
+        title: task.title,
+        description: task.description,
+        start_time: task.start_time,
+        end_time: task.end_time,
+        completed: false,
+        category_id: 1, // Modify as needed
+        weight: task.weight,
+        date: nextOccurence,
+        ...(task.repeat_again && { repeat: task.repeat_again })
+    });
+}
 
   const handle5minCompletion = async (Task: Task, five: boolean, routine: boolean) => {
     try {
@@ -946,7 +981,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
               <StyledTableCell>No</StyledTableCell>
               <StyledTableCell>Time</StyledTableCell>
               <StyledTableCell>Edit</StyledTableCell>
-              <StyledTableCell>5-Min</StyledTableCell>
+              <StyledTableCell>cancelled</StyledTableCell>
               <StyledTableCell>S.Del</StyledTableCell>
               <StyledTableCell>Notes</StyledTableCell>
             </TableRow>
@@ -1071,7 +1106,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
                       </StyledTableCell>
                       <StyledTableCell >
                         <Checkbox
-                          disabled={search ? true : false}
+                          // disabled={search ? true : false}
                           checked={task.not_completed}
                           onChange={() =>
                             handleTaskNonCompletion(task, task.not_completed, task.title.toLowerCase().includes("i get to do it"))
@@ -1082,7 +1117,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
                       </StyledTableCell>
                       <StyledTableCell >
                         <Checkbox
-                          disabled={search ? true : false}
+                          // disabled={search ? true : false}
                           checked={task.reassign}
                           onChange={() =>
                             handleTaskReassign(task, task.reassign)
@@ -1118,7 +1153,7 @@ export const TasksTable: React.FC<TasksTableProps> = ({ date, setBackDate, searc
                       </StyledTableCell>
                       <StyledTableCell>
                         <Checkbox
-                          disabled={search ? true : false}
+                          // disabled={search ? true : false}
                           checked={task.five}
                           onChange={() =>
                             handle5minCompletion(task, task.five, task.title.toLowerCase().includes("i get to do it"))

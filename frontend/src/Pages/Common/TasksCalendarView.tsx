@@ -427,7 +427,10 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                     date: date ? date : format(new Date(), 'yyyy-MM-dd')
                 });
 
-                createNext(task);
+                if (task.repeat_again) {
+
+                    createNext(task);
+                }
 
 
             }
@@ -471,15 +474,28 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
         });
     }
 
-    const calculateNextOccurrence = (next: number): string => {
-        const today = new Date();
+    const createNotCompletedTask = async (task: any) => {
+        // const nextOccurence = calculateNextOccurrence(task.repeat_again!)
+
+        const today = new Date(task.date);
+        today.setDate(today.getDate() + 1);
 
 
-        today.setDate(today.getDate() + next);
+        const nextOccurence = today.toISOString().split('T')[0];
 
+        //insert
+        await axios.post(`${portUrl}/tasks/tasks`, {
+            title: task.title,
+            description: task.description,
+            start_time: task.start_time,
+            end_time: task.end_time,
+            completed: false,
+            category_id: 1, // Modify as needed
+            weight: task.weight,
+            date: nextOccurence
+        });
+    }
 
-        return today.toISOString().split('T')[0]; // Return date in YYYY-MM-DD format
-    };
 
 
     const handleTaskNonCompletion = async (task: Task, not_completed: boolean, routine: boolean) => {
@@ -487,6 +503,11 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
             await axios.put(`${portUrl}/tasks/tasksNotCompleted/${task.id}`, {
                 not_completed: !not_completed,
             });
+
+            if(!task.title.toLowerCase().includes("i get to do it") &&  !not_completed){
+                createNotCompletedTask(task)
+
+            }
 
             if (routine) {
                 await axios.post(`${portUrl}/habits/habits`, {
@@ -497,7 +518,10 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                     date: date ? date : format(new Date(), 'yyyy-MM-dd')
                 });
 
-                createNext(task);
+                if (task.repeat_again) {
+
+                    createNext(task);
+                }
             }
 
             // Provide audio feedback using text-to-speech

@@ -107,8 +107,9 @@ router.post('/tasks', async (req: Request, res: Response) => {
 
         // If duplicate exists, return early with a message
         if (existingTask) {
-            await db.close();
+            // await db.close();
             res.status(201).json({ id: 'Task already exists' });
+            return;
             // return res.status(200).json({
             //     message: 'Task already exists',
             //     id: existingTask.id,
@@ -364,17 +365,30 @@ router.post('/gettasks', async (req: Request, res: Response) => {
         let habitTasks = [];
         if (search) {
 
-            // if(search.text){
-            tasks = await db.all(`
+            if (search.text) {
+                tasks = await db.all(`
                 SELECT * FROM task 
                 WHERE title LIKE ? 
               
             `, [`%${search.text}%`]);
 
-            habitTasks = await db.all(`
+                habitTasks = await db.all(`
                 SELECT * FROM habit 
                WHERE taskName LIKE ?
             `, [`%${search.text}%`]);
+            } else {
+
+                tasks = await db.all(`
+                    SELECT * FROM task 
+                   
+                  
+                `)
+
+                habitTasks = await db.all(`
+                    SELECT * FROM habit 
+                 `);
+
+            }
 
 
             const habitTaskNames = habitTasks.map(habit =>
@@ -467,6 +481,10 @@ router.post('/gettasks', async (req: Request, res: Response) => {
                 tasks = tasks.slice(startIndex, endIndex);
             }
             console.log('433', tasks.length)
+
+            if (search.unfinished) {
+                tasks = tasks.filter(task => !task.completed)
+            }
             // }
             res.json(tasks);
 
