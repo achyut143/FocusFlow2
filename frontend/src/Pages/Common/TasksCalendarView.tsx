@@ -253,6 +253,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [editedTitle, setEditedTitle] = useState<string>("");
     const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [editRepeatDays, setEditRepeatDays] = useState<number | null>(null);
     const [openWYS, setOpenWYS] = useState<number | null>(null);
     const [expandedTasks, setExpandedTasks] = useState<number[]>([]);
 
@@ -417,7 +418,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
 
             });
 
-            if (routine) {
+            if (routine ) {
 
                 await axios.post(`${portUrl}/habits/habits`, {
                     taskName: task.title,
@@ -427,7 +428,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                     date: date ? date : format(new Date(), 'yyyy-MM-dd')
                 });
 
-                if (task.repeat_again) {
+                if (task.repeat_again && !task.reassign) {
 
                     createNext(task);
                 }
@@ -504,7 +505,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                 not_completed: !not_completed,
             });
 
-            if(!task.title.toLowerCase().includes("i get to do it") &&  !not_completed){
+            if (!task.title.toLowerCase().includes("i get to do it") && !not_completed && !task.reassign) {
                 createNotCompletedTask(task)
 
             }
@@ -518,7 +519,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                     date: date ? date : format(new Date(), 'yyyy-MM-dd')
                 });
 
-                if (task.repeat_again) {
+                if (task.repeat_again && !task.reassign) {
 
                     createNext(task);
                 }
@@ -546,7 +547,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                 five: !five,
             });
 
-            if (routine) {
+            if (routine ) {
                 await axios.post(`${portUrl}/habits/habits`, {
                     taskName: task.title,
                     done: 1,
@@ -592,6 +593,28 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
         }
     };
 
+    const handleTaskReassign = async (Task: Task, reassign: boolean) => {
+        try {
+            await axios.put(`${portUrl}/tasks/reassign/${Task.id}`, {
+                reassign: !reassign,
+            });
+
+
+
+
+
+            // Update local state
+            setTasks((prevTasks) =>
+                prevTasks.map((task) =>
+                    task.id === Task.id ? { ...task, reassign: !reassign } : task
+                )
+            );
+        } catch (err) {
+            console.error("Error updating task:", err);
+            // Optionally show error message to user
+        }
+    };
+
     const handleEditTask = async () => {
         if (!editingTask) return;
 
@@ -611,7 +634,8 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                 title: taskName,
                 date: currentDate,
                 weight: weight ? weight : 1,
-                category: 1
+                category: 1,
+                repeat: editRepeatDays
             });
 
             // Update local state
@@ -623,7 +647,8 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                         description: description,
                         start_time: startTime,
                         end_time: endTime,
-                        weight: parseInt(weight || "1")
+                        weight: parseFloat(weight || "1"),
+                        repeat_again: editRepeatDays
                     } : task
                 )
             );
@@ -631,6 +656,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
             // Reset editing state
             setEditingTask(null);
             setEditedTitle("");
+            setEditRepeatDays(null);
             setEditDialogOpen(false);
         } catch (err) {
             console.error("Error updating task:", err);
@@ -948,8 +974,31 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                         borderTop: '2px solid #f44336',
                         zIndex: 5,
                         top: `${(currentTime.getHours() * 60 + currentTime.getMinutes()) / 5 * 30}px`,
+                        display: 'flex',
+                        alignItems: 'center',
                     }}
-                />
+                >
+                    <Box
+                        sx={{
+                            backgroundColor: '#f44336',
+                            color: 'white',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                            position: 'absolute',
+                            left: '4px',
+                            transform: 'translateY(-50%)',
+                        }}
+                    >
+                        {currentTime.toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            timeZone: InternationaltimeZone
+                        })}
+                    </Box>
+                </Box>
                 <div className="calendar-day-view">
                     {timeSlots.map((slot, index) => {
                         const hour = slot.hour;
@@ -1064,7 +1113,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                                             {task.repeat_again && (
                                                 <Box sx={{
                                                     backgroundColor: 'rgba(46,213,115,0.2)',
-                                                    color: '#2ed573',
+                                                    color: task.reassign ? 'red' : '#2ed573',
                                                     borderRadius: '50%',
                                                     width: '28px',
                                                     height: '28px',
@@ -1076,7 +1125,9 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                                                     position: 'relative',
                                                     flexShrink: 0
                                                 }}>
-                                                    <LoopIcon fontSize="small" />
+                                                    <LoopIcon fontSize="small" onClick={() =>
+                                                        handleTaskReassign(task, task.reassign)
+                                                    } />
                                                     <Typography
                                                         variant="caption"
                                                         sx={{
@@ -1101,6 +1152,8 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                                                 </Box>
                                             )}
 
+
+
                                             {/* Description (if available) */}
                                             {task.description && (
                                                 <Box sx={{
@@ -1119,7 +1172,11 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                                                     {task.description}
                                                 </Box>
                                             )}
+
+
+
                                         </Box>
+
 
                                         <Box sx={{
                                             display: 'flex',
@@ -1146,6 +1203,7 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                                                 onClick={() => {
                                                     setEditingTask(task);
                                                     setEditedTitle(`${task.start_time} - ${task.end_time} - ${task.title} - ${task.description} - ${task.weight}`);
+                                                    setEditRepeatDays(task.repeat_again);
                                                     setEditDialogOpen(true);
                                                 }}
                                             >
@@ -1236,6 +1294,49 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
                         sx={{ mt: 2 }}
                         helperText="Format: Start Time - End Time - Title - Description - Weight (e.g., 9:00 AM - 10:00 AM - Meeting - Client discussion - 2)"
                     />
+
+                    <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                            Repeat Every
+                        </Typography>
+                        <TextField
+                            type="number"
+                            value={editRepeatDays !== null ? editRepeatDays : ''}
+                            onChange={(e) => {
+                                const value = e.target.value ? parseInt(e.target.value) : null;
+                                setEditRepeatDays(value);
+                            }}
+                            variant="outlined"
+                            size="small"
+                            InputProps={{
+                                inputProps: { min: 1 },
+                                endAdornment: <Typography variant="body2" sx={{ ml: 1 }}>days</Typography>,
+                            }}
+                            sx={{ width: '150px' }}
+                        />
+                        {editRepeatDays && (
+                            <Tooltip title="Clear repeat setting">
+                                <IconButton onClick={() => setEditRepeatDays(null)} size="small">
+                                    <CloseIcon fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                        {editRepeatDays && (
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                bgcolor: 'rgba(46,213,115,0.1)',
+                                borderRadius: 1,
+                                p: 1,
+                                border: '1px solid rgba(46,213,115,0.3)'
+                            }}>
+                                <LoopIcon fontSize="small" sx={{ color: '#2ed573', mr: 1 }} />
+                                <Typography variant="body2" color="text.secondary">
+                                    Task will repeat every {editRepeatDays} day{editRepeatDays !== 1 ? 's' : ''}
+                                </Typography>
+                            </Box>
+                        )}
+                    </Box>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 3 }}>
                     <Button onClick={() => setEditDialogOpen(false)} variant="outlined" size="large">Cancel</Button>

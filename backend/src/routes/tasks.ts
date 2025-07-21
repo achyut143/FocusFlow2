@@ -747,12 +747,12 @@ router.put('/fiveCompleted/:id', async (req: Request, res: Response) => {
 // Update whole task
 //title, description, start_time, end_time,category
 router.put('/tasksUpdate/:id', async (req: Request, res: Response) => {
-    const { title, description, start_time, end_time, weight, category } = req.body;
+    const { title, description, start_time, end_time, weight, category, repeat } = req.body;
     const db = await openDb();
     await db.run(`
-        UPDATE task SET  title = ? , description= ? , start_time = ? , end_time = ? ,category_id = ?,weight = ?
+        UPDATE task SET  title = ? , description= ? , start_time = ? , end_time = ? ,category_id = ?, weight = ?, repeat_again = ?
         WHERE id = ?`,
-        [title, description, start_time, end_time, category, weight, req.params.id]
+        [title, description, start_time, end_time, category, weight, repeat, req.params.id]
     );
     await db.close();
     res.json({ message: 'Task updated' });
@@ -848,7 +848,7 @@ router.get('/pointsGraph', async (req: Request, res: Response) => {
                 SUM(CASE WHEN not_completed = 1  THEN weight ELSE 0 END) as notCompletedPoints,
                 SUM(weight) as totalPoints
             FROM task 
-            WHERE date >= ? AND date <= ?
+  WHERE date >= ? AND date <= ? AND deletedAt IS NULL AND LOWER(title) NOT LIKE '%i get to do it%' COLLATE NOCASE
             GROUP BY Date
             ORDER BY Date DESC
         `, [fromDate, toDate]);
@@ -859,7 +859,7 @@ router.get('/pointsGraph', async (req: Request, res: Response) => {
                 SUM(CASE WHEN done = 1 THEN weight ELSE 0 END) as habitDonePoints,
                 SUM(CASE WHEN procrastinated = 1 THEN weight ELSE 0 END) as habitProcrastinatedPoints
             FROM habit
-            WHERE date >= ? AND date <= ?
+  WHERE date >= ? AND date <= ? AND LOWER(taskName) LIKE '%i get to do it%' COLLATE NOCASE
             GROUP BY date
             ORDER BY date DESC
         `, [fromDate, toDate]);

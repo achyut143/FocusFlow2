@@ -200,4 +200,68 @@ ORDER BY `ProjectModel`.`name` ASC;
 
 ------
 
+SELECT
+    `ScenarioPlanProjectJunctionModel`.*,
+    `project->assignees`.`id` AS `project.assignees.id`,
+    `project->assignees`.`role_id` AS `project.assignees.roleId`,
+    `project->assignees`.`email` AS `project.assignees.email`,
+    `project->assignees->role`.`id` AS `project.assignees.role.id`,
+    `project->assignees->role`.`pht_role` AS `project.assignees.role.phtRole`,
+    `project->portfolio`.`id` AS `project.portfolio.id`,
+    `project->portfolio`.`name` AS `project.portfolio.name`,
+    `project->projectType`.`id` AS `project.projectType.id`,
+    `project->projectType`.`name` AS `project.projectType.name`,
+    `projectRoleScenarioModel`.`id` AS `projectRoleScenarioModel.id`,
+    `projectRoleScenarioModel`.`role_id` AS `projectRoleScenarioModel.roleId`,
+    `projectRoleScenarioModel->role`.`id` AS `projectRoleScenarioModel.role.id`,
+    `projectRoleScenarioModel->role`.`pht_role` AS `projectRoleScenarioModel.role.phtRole`
+FROM (
+    SELECT
+        `ScenarioPlanProjectJunctionModel`.`id`,
+        `ScenarioPlanProjectJunctionModel`.`project_id` AS `projectId`,
+        `ScenarioPlanProjectJunctionModel`.`scenario_plan_id` AS `scenarioPlanId`,
+        `ScenarioPlanProjectJunctionModel`.`version`,
+        `ScenarioPlanProjectJunctionModel`.`operation`,
+        `ScenarioPlanProjectJunctionModel`.`created_by` AS `createdBy`,
+        `ScenarioPlanProjectJunctionModel`.`updated_by` AS `updatedBy`,
+        `ScenarioPlanProjectJunctionModel`.`created_at` AS `createdAt`,
+        `ScenarioPlanProjectJunctionModel`.`updated_at` AS `updatedAt`,
+        `ScenarioPlanProjectJunctionModel`.`deleted_at` AS `deletedAt`,
+        `project`.`id` AS `project.id`,
+        `project`.`name` AS `project.name`,
+        `project`.`portfolio_id` AS `project.portfolioId`,
+        `project`.`project_type_id` AS `project.projectTypeId`,
+        `project`.`is_confidential` AS `project.isConfidential`
+    FROM
+        `scenario_plan_project_junction` AS `ScenarioPlanProjectJunctionModel`
+    INNER JOIN
+        `project` AS `project` ON `ScenarioPlanProjectJunctionModel`.`project_id` = `project`.`id`
+        AND (`project`.`deleted_at` IS NULL AND `project`.`region` IN ('NA'))
+    WHERE
+        (`ScenarioPlanProjectJunctionModel`.`deleted_at` IS NULL
+        AND `ScenarioPlanProjectJunctionModel`.`id` IN (
+            56282, 56241, 53545, 56285, 53483, 53405, 53517, 53274, 53273, 53473,
+            -- ... (long list of IDs omitted for brevity)
+            56277, 56278, 56279
+        ))
+    LIMIT 0, 10
+) AS `ScenarioPlanProjectJunctionModel`
+LEFT OUTER JOIN
+    `assignee` AS `project->assignees` ON `project.id` = `project->assignees`.`project_id`
+    AND (`project->assignees`.`deleted_at` IS NULL)
+LEFT OUTER JOIN
+    `role` AS `project->assignees->role` ON `project->assignees`.`role_id` = `project->assignees->role`.`id`
+    AND (`project->assignees->role`.`deleted_at` IS NULL)
+LEFT OUTER JOIN
+    `portfolio` AS `project->portfolio` ON `project.portfolioId` = `project->portfolio`.`id`
+    AND (`project->portfolio`.`deleted_at` IS NULL)
+LEFT OUTER JOIN
+    `project_type` AS `project->projectType` ON `project.projectTypeId` = `project->projectType`.`id`
+    AND (`project->projectType`.`deleted_at` IS NULL)
+LEFT OUTER JOIN
+    `project_role_scenario` AS `projectRoleScenarioModel` ON `ScenarioPlanProjectJunctionModel`.`id` = `projectRoleScenarioModel`.`scenario_project_link_id`
+    AND (`projectRoleScenarioModel`.`deleted_at` IS NULL)
+LEFT OUTER JOIN
+    `role` AS `projectRoleScenarioModel->role` ON `projectRoleScenarioModel`.`role_id` = `projectRoleScenarioModel->role`.`id`
+    AND (`projectRoleScenarioModel->role`.`deleted_at` IS NULL);
 

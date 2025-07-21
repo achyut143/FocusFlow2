@@ -84,7 +84,7 @@ const WYSIWYGEditor: React.FC<Props> = ({
 
             // Save to database
             saveContent(serializedContent);
-        }, 6000); // 3 seconds delay
+        }, 20000); // 20 seconds delay
 
         setSaveTimeout(timeout);
     }, [saveTimeout, habit, Task, taskId, date, setTasks]);
@@ -114,7 +114,7 @@ const WYSIWYGEditor: React.FC<Props> = ({
 
     const handleEditorChange = (state: EditorState) => {
         setEditorState(state);
-        debouncedSave(state);
+         debouncedSave(state);
     };
 
     const handlePastedText = (
@@ -224,7 +224,7 @@ const WYSIWYGEditor: React.FC<Props> = ({
     return (
         <Dialog
             open={open}
-            onClose={onClose}
+            onClose={() => { saveToDatabase(); onClose() }}
             maxWidth="md"
             fullWidth
             aria-labelledby="notes-dialog-title"
@@ -282,7 +282,10 @@ const WYSIWYGEditor: React.FC<Props> = ({
                 </div>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose} color="primary">
+                <Button onClick={() => {
+                    saveToDatabase()
+                    onClose()
+                }} color="primary">
                     Cancel
                 </Button>
                 <Button
