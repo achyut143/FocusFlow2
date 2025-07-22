@@ -493,7 +493,9 @@ export const TasksCalendarView: React.FC<TasksCalendarViewProps> = ({ date, setB
             completed: false,
             category_id: 1, // Modify as needed
             weight: task.weight,
-            date: nextOccurence
+            date: nextOccurence,
+            repeat:task.repeat_again,
+            reassign:true
         });
     }
 

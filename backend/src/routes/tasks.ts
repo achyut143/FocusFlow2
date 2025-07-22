@@ -94,7 +94,7 @@ router.post('/remindersToTasks', async (req: Request, res: Response) => {
 });
 
 router.post('/tasks', async (req: Request, res: Response) => {
-    const { title, description, start_time, end_time, completed, category_id, weight, date, repeat } = req.body;
+    const { title, description, start_time, end_time, completed, category_id, weight, date, repeat,reassign } = req.body;
     const db = await openDb();
 
     try {
@@ -132,9 +132,9 @@ router.post('/tasks', async (req: Request, res: Response) => {
         } else {
             // Use provided date
             const result = await db.run(`
-                INSERT INTO task (title, description, start_time, end_time, completed, category_id, date, weight, repeat_again) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, description, start_time, end_time, completed, category_id, date, weight, repeat]
+                INSERT INTO task (title, description, start_time, end_time, completed, category_id, date, weight, repeat_again,reassign) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?)`,
+                [title, description, start_time, end_time, completed, category_id, date, weight, repeat,reassign ? reassign:false]
             );
             await db.close();
             res.status(201).json({ id: result.lastID });

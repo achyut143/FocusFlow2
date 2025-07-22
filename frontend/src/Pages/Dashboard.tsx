@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Paper, Typography, Box, Tooltip, Tab, Tabs, TextField, Button, IconButton } from '@mui/material';
+import { Paper, Typography, Box, Tooltip, Tab, Tabs, TextField, Button, IconButton, Switch, FormControlLabel } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
 import { format, subDays, isSameDay, parseISO, startOfDay } from 'date-fns';
@@ -22,6 +22,7 @@ interface HabitCalendarProps {
 
 const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDate, setPercentage }) => {
   const [selectedHabit, setSelectedHabit] = useState<string>('');
+  const [hideGetToDo, setHideGetToDo] = useState(false);
 
   const handleDeleteHabit = async (title: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent tab selection when clicking delete
@@ -36,7 +37,9 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDa
     }
   };
 
-  const habitNames = Array.from(new Set(habitData.map(habit => habit.taskName)));
+  const habitNames = Array.from(new Set(habitData
+    .filter(habit => hideGetToDo ? !habit.taskName.toLowerCase().includes("i get to do it") : true)
+    .map(habit => habit.taskName)));
 
   useEffect(() => {
     if (habitNames.length > 0 && !selectedHabit) {
@@ -93,7 +96,12 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDa
     });
 
     // Calculate percentage of completed tasks
-    const totalDays = completedCount + notCompletedCount + noDataCount;
+    // For tasks without "I get to do it", only consider days with data
+    const isGetToDoTask = habitName.toLowerCase().includes("i get to do it");
+    const totalDays = isGetToDoTask
+      ? completedCount + notCompletedCount + noDataCount
+      : completedCount + notCompletedCount; // Exclude no-data days for non-"I get to do it" tasks
+
     const percentage = totalDays > 0 ? (completedCount / totalDays) * 100 : 0;
 
     // Set the percentage in the parent component if this is for the selected habit
@@ -101,7 +109,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDa
       setPercentage(percentage);
     }
 
-    return { completedCount, notCompletedCount, noDataCount, percentage };
+    return { completedCount, notCompletedCount, noDataCount, percentage, hasData: completedCount > 0 || notCompletedCount > 0 };
   };
 
   const { completedCount, notCompletedCount, noDataCount } = calculateStats();
@@ -132,9 +140,22 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDa
 
   return (
     <Paper elevation={0} sx={{ p: 3, border: '1px solid #e0e0e0', borderRadius: 2 }}>
-      <Typography variant="h6" gutterBottom>
-        Habit Tracker
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6">
+          Habit Tracker
+        </Typography>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={hideGetToDo}
+              onChange={() => setHideGetToDo(!hideGetToDo)}
+              color="primary"
+              size="small"
+            />
+          }
+          label="Hide 'I get to do it'"
+        />
+      </Box>
 
       <Tabs
         value={selectedHabit}
@@ -145,12 +166,23 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDa
       >
         {habitNames.map(habitName => {
           const stats = calculateStats(habitName);
-          const totalDays = stats.completedCount + stats.notCompletedCount + stats.noDataCount;
+          const isGetToDoTask = habitName.toLowerCase().includes("i get to do it");
+          const totalDays = isGetToDoTask
+            ? stats.completedCount + stats.notCompletedCount + stats.noDataCount
+            : stats.completedCount + stats.notCompletedCount;
           return (
             <Tab
               key={habitName}
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Box sx={{
+                    display: 'inline-block',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    mr: 1,
+                    bgcolor: habitName.toLowerCase().includes("i get to do it") ? '#9c27b0' : '#2196f3'
+                  }} />
                   {habitName.replace("(I get to do it)", "")}
 
                   <Box
@@ -189,60 +221,70 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDa
         gap: 1,
         mb: 2
       }}>
-        {dateRange.map((date) => (
-          <Tooltip
-            key={date.toISOString()}
-            title={getTooltipText(date)}
-            arrow
-          >
-            <Box
-              sx={{
-                position: 'relative',
-                width: '100%',
-                paddingBottom: '40%',
-                backgroundColor: getColorForStatus(getStatusForDay(date)),
-                borderRadius: 1,
-                cursor: 'pointer',
-                transition: 'transform 0.2s',
-                '&:hover': {
-                  transform: 'scale(1.1)',
-                  zIndex: 1
-                }
-              }}
+        {dateRange.map((date) => {
+          const status = getStatusForDay(date);
+          const isGetToDoTask = selectedHabit.toLowerCase().includes("i get to do it");
+
+          // For non-"I get to do it" tasks, only render blocks with data
+          if (!isGetToDoTask && status === 'no-data') {
+            return null;
+          }
+
+          return (
+            <Tooltip
+              key={date.toISOString()}
+              title={getTooltipText(date)}
+              arrow
             >
               <Box
                 sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
+                  position: 'relative',
+                  width: '100%',
+                  paddingBottom: '40%',
+                  backgroundColor: getColorForStatus(status),
+                  borderRadius: 1,
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s',
+                  '&:hover': {
+                    transform: 'scale(1.1)',
+                    zIndex: 1
+                  }
                 }}
               >
-                <Typography
-                  variant="caption"
+                <Box
                   sx={{
-                    fontSize: '1rem',
-                    color: getStatusForDay(date) === 'no-data' ? '#666' : '#fff',
-                    lineHeight: 1,
-                    textAlign: 'center',
-                    userSelect: 'none'
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
                   }}
                 >
-                  {format(date, 'd')}
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: '1rem',
+                      color: getStatusForDay(date) === 'no-data' ? '#666' : '#fff',
+                      lineHeight: 1,
+                      textAlign: 'center',
+                      userSelect: 'none'
+                    }}
+                  >
+                    {format(date, 'd')}
 
-                  {format(date, 'MMM')}
-                  <br />
-                  {`${format(date, 'EEE')}`}
-                </Typography>
+                    {format(date, 'MMM')}
+                    <br />
+                    {`${format(date, 'EEE')}`}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
-          </Tooltip>
-        ))}
+            </Tooltip>
+          )
+        })}
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
