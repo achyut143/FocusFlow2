@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Paper, Typography, Box, Tooltip, Tab, Tabs, TextField, Button, IconButton, Switch, FormControlLabel } from '@mui/material';
+import { Paper, Typography, Box, Tooltip, Tab, Tabs, TextField, Button, IconButton, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
 import { format, subDays, isSameDay, parseISO, startOfDay } from 'date-fns';
@@ -22,7 +22,7 @@ interface HabitCalendarProps {
 
 const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDate, setPercentage }) => {
   const [selectedHabit, setSelectedHabit] = useState<string>('');
-  const [hideGetToDo, setHideGetToDo] = useState(false);
+  const [filterMode, setFilterMode] = useState<string>('all');
 
   const handleDeleteHabit = async (title: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent tab selection when clicking delete
@@ -38,7 +38,12 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDa
   };
 
   const habitNames = Array.from(new Set(habitData
-    .filter(habit => hideGetToDo ? !habit.taskName.toLowerCase().includes("i get to do it") : true)
+    .filter(habit => {
+      if (filterMode === 'all') return true;
+      if (filterMode === 'getToDoOnly') return habit.taskName.toLowerCase().includes("i get to do it");
+      if (filterMode === 'nonGetToDoOnly') return !habit.taskName.toLowerCase().includes("i get to do it");
+      return true;
+    })
     .map(habit => habit.taskName)));
 
   useEffect(() => {
@@ -144,17 +149,23 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habitData, fromDate, toDa
         <Typography variant="h6">
           Habit Tracker
         </Typography>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={hideGetToDo}
-              onChange={() => setHideGetToDo(!hideGetToDo)}
-              color="primary"
-              size="small"
-            />
-          }
-          label="Hide 'I get to do it'"
-        />
+        <ToggleButtonGroup
+          value={filterMode}
+          exclusive
+          onChange={(_, newValue) => newValue && setFilterMode(newValue)}
+          size="small"
+          aria-label="task filter"
+        >
+          <ToggleButton value="all" aria-label="show all tasks">
+            All
+          </ToggleButton>
+          <ToggleButton value="getToDoOnly" aria-label="show only 'I get to do it' tasks">
+            routines
+          </ToggleButton>
+          <ToggleButton value="nonGetToDoOnly" aria-label="show tasks without 'I get to do it'">
+            repeats
+          </ToggleButton>
+        </ToggleButtonGroup>
       </Box>
 
       <Tabs
