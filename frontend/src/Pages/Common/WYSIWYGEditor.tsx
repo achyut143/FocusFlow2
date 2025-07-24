@@ -114,7 +114,7 @@ const WYSIWYGEditor: React.FC<Props> = ({
 
     const handleEditorChange = (state: EditorState) => {
         setEditorState(state);
-         debouncedSave(state);
+        //  debouncedSave(state);
     };
 
     const handlePastedText = (
@@ -190,7 +190,7 @@ const WYSIWYGEditor: React.FC<Props> = ({
 
         try {
             await saveContent(serializedContent);
-            onClose();
+            // onClose();
         } catch (error) {
             console.error("Error saving notes:", error);
         }
@@ -233,7 +233,7 @@ const WYSIWYGEditor: React.FC<Props> = ({
                 Edit Notes
                 <IconButton
                     aria-label="close"
-                    onClick={onClose}
+                    onClick={() => { saveToDatabase(); onClose() }}
                     sx={{
                         position: 'absolute',
                         right: 8,
@@ -286,7 +286,7 @@ const WYSIWYGEditor: React.FC<Props> = ({
                     saveToDatabase()
                     onClose()
                 }} color="primary">
-                    Cancel
+                    Close
                 </Button>
                 <Button
                     onClick={saveToDatabase}

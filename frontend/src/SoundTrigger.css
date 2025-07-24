@@ -131,6 +131,35 @@
   margin: 8px 0 0;
 }
 
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #3f51b5;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.completion-message {
+  color: #4caf50;
+  font-weight: bold;
+  margin-top: 10px;
+  font-size: 1.1rem;
+}
+
+.minimized-complete {
+  font-size: 12px;
+  color: #4caf50;
+  font-weight: bold;
+}
+
 .time-display {
   font-size: 0.9rem;
   color: #757575;
